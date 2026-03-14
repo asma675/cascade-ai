@@ -75,6 +75,7 @@ export default function Globe() {
   const [showResults, setShowResults] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [hoveredCity, setHoveredCity] = useState(null);
+  const [openPopup, setOpenPopup] = useState(null);
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -142,8 +143,26 @@ export default function Globe() {
     }
   };
 
-  const handleCityClick = (city) => {
-    navigate(`/City/${encodeURIComponent(city.name)}`);
+  const handleCityClick = async (city) => {
+    // Check if city exists in database
+    const existingCity = cities.find(c => 
+      c.name === city.name && c.country === city.country
+    );
+    
+    if (existingCity) {
+      navigate(`/City/${encodeURIComponent(existingCity.name)}`);
+    } else {
+      // Create new city entry
+      const newCity = await base44.entities.City.create({
+        name: city.name,
+        country: city.country,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        population: city.population,
+        climate_zone: city.climate_zone || 'temperate'
+      });
+      navigate(`/City/${encodeURIComponent(newCity.name)}`);
+    }
   };
 
   const allCities = [...cities, ...northAmericanCapitals.filter(capital => 
@@ -276,13 +295,22 @@ export default function Globe() {
               weight={hoveredCity === idx ? 3 : 2}
               opacity={hoveredCity === idx ? 1 : 0.8}
               fillOpacity={hoveredCity === idx ? 0.9 : 0.7}
-              onMouseEnter={() => setHoveredCity(idx)}
-              onMouseLeave={() => setHoveredCity(null)}
+              onMouseEnter={() => {
+                setHoveredCity(idx);
+                setOpenPopup(idx);
+              }}
+              onMouseLeave={() => {
+                setHoveredCity(null);
+                setOpenPopup(null);
+              }}
               eventHandlers={{
-                click: () => handleCityClick(city)
+                click: () => setOpenPopup(idx)
               }}
             >
-              <Popup>
+              <Popup
+                open={openPopup === idx}
+                onClose={() => setOpenPopup(null)}
+              >
                 <div className="text-center p-4 min-w-64">
                   <h3 className="font-bold text-lg mb-2 text-slate-900">{city.name}</h3>
                   <p className="text-sm text-slate-600 mb-3">{city.country}</p>
@@ -299,7 +327,10 @@ export default function Globe() {
                     )}
                   </div>
                   <button
-                    onClick={() => handleCityClick(city)}
+                    onClick={() => {
+                      setOpenPopup(null);
+                      handleCityClick(city);
+                    }}
                     className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-lg shadow-purple-500/30 transition-all hover:scale-105 flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
