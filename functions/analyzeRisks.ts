@@ -8,8 +8,14 @@ Deno.serve(async (req) => {
     // Fetch NASA POWER data
     const nasaData = await fetchNASAPowerData(city);
     
+    // Fetch WeatherAPI data for real-time validation
+    const weatherApiData = await fetchWeatherAPIData(city);
+    
+    // Merge data sources
+    const mergedData = mergeDataSources(nasaData, weatherApiData);
+    
     // Detect hazards
-    const hazards = detectHazards(nasaData, city);
+    const hazards = detectHazards(mergedData, city);
     
     // Generate cascading risk chains using AI
     const cascadingChains = await generateCascadingChains(base44, city, hazards, nasaData);
@@ -24,7 +30,7 @@ Deno.serve(async (req) => {
       assessment_date: new Date().toISOString(),
       hazards_detected: hazards,
       cascading_chains: cascadingChains,
-      environmental_data: nasaData,
+      environmental_data: mergedData,
       predicted_impacts: predictedImpacts
     };
 
@@ -130,6 +136,56 @@ async function fetchNASAPowerData(city) {
   };
 }
 
+async function fetchWeatherAPIData(city) {
+  const apiKey = Deno.env.get("WEATHERAPI_KEY");
+  if (!apiKey) {
+    return null;
+  }
+  
+  const url = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city.latitude},${city.longitude}&aqi=yes`;
+  
+  const response = await fetch(url);
+  const data = await response.json();
+  
+  return {
+    current: {
+      temperature: data.current.temp_c,
+      feels_like: data.current.feelslike_c,
+      wind_speed: data.current.wind_kph / 3.6, // Convert to m/s
+      wind_direction: data.current.wind_dir,
+      humidity: data.current.humidity,
+      pressure: data.current.pressure_mb,
+      precipitation: data.current.precip_mm,
+      uv_index: data.current.uv,
+      visibility: data.current.vis_km,
+      cloud_cover: data.current.cloud
+    },
+    air_quality: data.current.air_quality ? {
+      pm2_5: data.current.air_quality.pm2_5,
+      pm10: data.current.air_quality.pm10,
+      us_epa_index: data.current.air_quality['us-epa-index'],
+      o3: data.current.air_quality.o3,
+      no2: data.current.air_quality.no2,
+      co: data.current.air_quality.co
+    } : null
+  };
+}
+
+function mergeDataSources(nasaData, weatherApiData) {
+  if (!weatherApiData) {
+    return nasaData;
+  }
+  
+  return {
+    ...nasaData,
+    current: {
+      ...nasaData.current,
+      ...weatherApiData.current,
+      air_quality: weatherApiData.air_quality
+    }
+  };
+}
+
 function detectHazards(nasaData, city) {
   const hazards = [];
   
@@ -230,8 +286,33 @@ function detectHazards(nasaData, city) {
     });
   }
   
-  // Air quality estimation (based on location and conditions)
-  if (city.population > 5000000) {
+  // Air quality detection using WeatherAPI data
+  if (nasaData.current?.air_quality) {
+    const aqi = nasaData.current.air_quality;
+    const epaIndex = aqi.us_epa_index;
+    
+    if (epaIndex >= 3) {
+      let severity = 'moderate';
+      let score = epaIndex * 1.5;
+      
+      if (epaIndex >= 5) severity = 'extreme';
+      else if (epaIndex >= 4) severity = 'severe';
+      
+      hazards.push({
+        type: 'air_quality',
+        severity,
+        score: Math.min(score, 10),
+        index: 'US EPA AQI',
+        value: epaIndex,
+        details: {
+          pm2_5: aqi.pm2_5?.toFixed(1),
+          pm10: aqi.pm10?.toFixed(1),
+          o3: aqi.o3?.toFixed(1)
+        }
+      });
+    }
+  } else if (city.population > 5000000) {
+    // Fallback estimation for large cities
     hazards.push({
       type: 'air_quality',
       severity: 'moderate',
