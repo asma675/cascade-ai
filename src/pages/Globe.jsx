@@ -36,6 +36,24 @@ function DarkModeHandler() {
   return null;
 }
 
+const northAmericanCapitals = [
+  { name: 'Washington D.C.', country: 'United States', latitude: 38.9072, longitude: -77.0369, population: 700000 },
+  { name: 'Ottawa', country: 'Canada', latitude: 45.4215, longitude: -75.6972, population: 1000000 },
+  { name: 'Mexico City', country: 'Mexico', latitude: 19.4326, longitude: -99.1332, population: 9200000 },
+  { name: 'Guatemala City', country: 'Guatemala', latitude: 14.6349, longitude: -90.5069, population: 3000000 },
+  { name: 'Belmopan', country: 'Belize', latitude: 17.2510, longitude: -88.7590, population: 20000 },
+  { name: 'San Salvador', country: 'El Salvador', latitude: 13.6929, longitude: -89.2182, population: 570000 },
+  { name: 'Tegucigalpa', country: 'Honduras', latitude: 14.0723, longitude: -87.1921, population: 1400000 },
+  { name: 'Managua', country: 'Nicaragua', latitude: 12.1364, longitude: -86.2514, population: 1050000 },
+  { name: 'San José', country: 'Costa Rica', latitude: 9.9281, longitude: -84.0907, population: 340000 },
+  { name: 'Panama City', country: 'Panama', latitude: 8.9824, longitude: -79.5199, population: 880000 },
+  { name: 'Havana', country: 'Cuba', latitude: 23.1136, longitude: -82.3666, population: 2100000 },
+  { name: 'Kingston', country: 'Jamaica', latitude: 17.9714, longitude: -76.7929, population: 670000 },
+  { name: 'Port-au-Prince', country: 'Haiti', latitude: 18.5944, longitude: -72.3074, population: 987000 },
+  { name: 'Santo Domingo', country: 'Dominican Republic', latitude: 18.4861, longitude: -69.9312, population: 965000 },
+  { name: 'Nassau', country: 'Bahamas', latitude: 25.0443, longitude: -77.3504, population: 275000 },
+];
+
 export default function Globe() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,7 +132,9 @@ export default function Globe() {
     navigate(`/City/${encodeURIComponent(city.name)}`);
   };
 
-  const filteredCities = cities;
+  const allCities = [...cities, ...northAmericanCapitals.filter(capital => 
+    !cities.some(city => city.name === capital.name && city.country === capital.country)
+  )];
 
   if (isLoading) {
     return (
@@ -232,9 +252,9 @@ export default function Globe() {
             />
           )}
           <DarkModeHandler />
-          {filteredCities.map(city => (
+          {allCities.map((city, idx) => (
             <Marker
-              key={city.id}
+              key={city.id || `capital-${idx}`}
               position={[city.latitude, city.longitude]}
             >
               <Popup>
@@ -242,7 +262,7 @@ export default function Globe() {
                   <h3 className="font-bold text-lg mb-1">{city.name}</h3>
                   <p className="text-sm text-slate-600 mb-2">{city.country}</p>
                   <p className="text-xs text-slate-500 mb-3">
-                    Pop: {(city.population / 1000000).toFixed(1)}M • {city.climate_zone}
+                    Pop: {(city.population / 1000000).toFixed(1)}M {city.climate_zone && `• ${city.climate_zone}`}
                   </p>
                   <button
                     onClick={() => handleCityClick(city)}
