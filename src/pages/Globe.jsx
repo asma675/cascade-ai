@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, MapPin, Globe as GlobeIcon, ArrowLeft } from 'lucide-react';
+import { Search, Loader2, MapPin, Globe as GlobeIcon, ArrowLeft, Zap } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -74,6 +74,7 @@ export default function Globe() {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [hoveredCity, setHoveredCity] = useState(null);
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -266,26 +267,47 @@ export default function Globe() {
           )}
           <DarkModeHandler />
           {allCities.map((city, idx) => (
-            <Marker
+            <CircleMarker
               key={city.id || `capital-${idx}`}
-              position={[city.latitude, city.longitude]}
+              center={[city.latitude, city.longitude]}
+              radius={hoveredCity === idx ? 8 : 5}
+              fillColor={hoveredCity === idx ? '#a855f7' : '#8b5cf6'}
+              color={hoveredCity === idx ? '#d946ef' : '#a855f7'}
+              weight={hoveredCity === idx ? 3 : 2}
+              opacity={hoveredCity === idx ? 1 : 0.8}
+              fillOpacity={hoveredCity === idx ? 0.9 : 0.7}
+              onMouseEnter={() => setHoveredCity(idx)}
+              onMouseLeave={() => setHoveredCity(null)}
+              eventHandlers={{
+                click: () => handleCityClick(city)
+              }}
             >
               <Popup>
-                <div className="text-center p-3">
-                  <h3 className="font-bold text-lg mb-1">{city.name}</h3>
-                  <p className="text-sm text-slate-600 mb-2">{city.country}</p>
-                  <p className="text-xs text-slate-500 mb-3">
-                    Pop: {(city.population / 1000000).toFixed(1)}M {city.climate_zone && `• ${city.climate_zone}`}
-                  </p>
+                <div className="text-center p-4 min-w-64">
+                  <h3 className="font-bold text-lg mb-2 text-slate-900">{city.name}</h3>
+                  <p className="text-sm text-slate-600 mb-3">{city.country}</p>
+                  <div className="bg-slate-100 rounded-lg p-3 mb-4 space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600">Population:</span>
+                      <span className="font-semibold text-slate-900">{(city.population / 1000000).toFixed(1)}M</span>
+                    </div>
+                    {city.climate_zone && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-600">Climate:</span>
+                        <span className="font-semibold text-slate-900 capitalize">{city.climate_zone}</span>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => handleCityClick(city)}
-                    className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
+                    className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-lg shadow-purple-500/30 transition-all hover:scale-105 flex items-center justify-center gap-2"
                   >
+                    <Zap className="w-4 h-4" />
                     Analyze Risks
                   </button>
                 </div>
               </Popup>
-            </Marker>
+            </CircleMarker>
           ))}
         </MapContainer>
       </div>
