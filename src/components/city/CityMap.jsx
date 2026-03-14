@@ -87,28 +87,34 @@ export default function CityMap({ city, assessment }) {
         </div>
       </div>
 
-      {/* Hazard Legend */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="flex items-center gap-2">
-          <Thermometer className="w-5 h-5 text-red-400" />
-          <span className="text-sm text-slate-300">Heat</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Droplets className="w-5 h-5 text-blue-400" />
-          <span className="text-sm text-slate-300">Precip</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Wind className="w-5 h-5 text-cyan-400" />
-          <span className="text-sm text-slate-300">Wind</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Flame className="w-5 h-5 text-orange-400" />
-          <span className="text-sm text-slate-300">Fire</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded bg-purple-400" />
-          <span className="text-sm text-slate-300">AQI</span>
-        </div>
+      {/* Hazard Data Grid */}
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { icon: <Thermometer className="w-5 h-5" />, label: 'Heat', type: 'heatwave', color: 'text-red-400' },
+          { icon: <Droplets className="w-5 h-5" />, label: 'Precip', type: 'drought', color: 'text-blue-400' },
+          { icon: <Wind className="w-5 h-5" />, label: 'Wind', type: 'high_wind', color: 'text-cyan-400' },
+          { icon: <Flame className="w-5 h-5" />, label: 'Fire', type: 'wildfire', color: 'text-orange-400' },
+          { icon: <div className="w-5 h-5 rounded bg-purple-400" />, label: 'AQI', type: 'air_quality', color: 'text-purple-400' }
+        ].map((item, idx) => {
+          const hazard = assessment.hazards_detected.find(h => h.type === item.type);
+          return (
+            <div key={idx} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={item.color}>{item.icon}</span>
+                <span className="text-xs font-semibold uppercase text-slate-400">{item.label}</span>
+              </div>
+              {hazard ? (
+                <div>
+                  <div className="text-lg font-bold text-slate-100">{hazard.value}</div>
+                  <div className="text-xs text-slate-400 mt-1">{hazard.index}</div>
+                  <div className="text-xs text-slate-500 mt-2">Severity: <span className="text-slate-300 font-medium">{hazard.severity}</span></div>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500">No data</div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </Card>
   );
