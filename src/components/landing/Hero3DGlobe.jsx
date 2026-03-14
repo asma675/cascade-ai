@@ -1,17 +1,15 @@
-import React, { useRef } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
-import { OrbitControls, Sphere } from '@react-three/drei';
+import React, { useRef, Suspense } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Sphere, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 function RotatingGlobe() {
   const meshRef = useRef();
   const cloudsRef = useRef();
 
-  const [earthTexture, earthBump, cloudsTexture] = useLoader(THREE.TextureLoader, [
-    'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-    'https://unpkg.com/three-globe/example/img/earth-topology.png',
-    'https://unpkg.com/three-globe/example/img/earth-clouds.png'
-  ]);
+  const earthTexture = useTexture('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+  const earthBump = useTexture('https://unpkg.com/three-globe/example/img/earth-topology.png');
+  const cloudsTexture = useTexture('https://unpkg.com/three-globe/example/img/earth-clouds.png');
 
   useFrame(() => {
     if (meshRef.current) {
@@ -55,13 +53,23 @@ function RotatingGlobe() {
   );
 }
 
+function LoadingFallback() {
+  return (
+    <Sphere args={[2.5, 32, 32]}>
+      <meshStandardMaterial color="#0ea5e9" wireframe />
+    </Sphere>
+  );
+}
+
 export default function Hero3DGlobe() {
   return (
     <div className="w-full h-full">
       <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 3, 5]} intensity={1} />
-        <RotatingGlobe />
+        <Suspense fallback={<LoadingFallback />}>
+          <RotatingGlobe />
+        </Suspense>
         <OrbitControls
           enableZoom={false}
           enablePan={false}
