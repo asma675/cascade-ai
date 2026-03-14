@@ -1,73 +1,19 @@
-import React, { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
-
-function RotatingGlobe() {
-  const meshRef = useRef();
-  const cloudsRef = useRef();
-
-  useFrame(() => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += 0.002;
-    }
-    if (cloudsRef.current) {
-      cloudsRef.current.rotation.y += 0.0015;
-    }
-  });
-
-  return (
-    <group>
-      {/* Earth */}
-      <mesh ref={meshRef}>
-        <sphereGeometry args={[2.5, 64, 64]} />
-        <meshStandardMaterial
-          color="#0ea5e9"
-          metalness={0.3}
-          roughness={0.7}
-        />
-      </mesh>
-      
-      {/* Cloud layer */}
-      <mesh ref={cloudsRef}>
-        <sphereGeometry args={[2.52, 32, 32]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          transparent={true}
-          opacity={0.15}
-          roughness={1}
-        />
-      </mesh>
-
-      {/* Atmosphere glow */}
-      <mesh>
-        <sphereGeometry args={[2.6, 64, 64]} />
-        <meshBasicMaterial
-          color="#4fc3f7"
-          transparent={true}
-          opacity={0.1}
-          side={THREE.BackSide}
-        />
-      </mesh>
-    </group>
-  );
-}
+import React from 'react';
 
 export default function Hero3DGlobe() {
   return (
-    <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 3, 5]} intensity={1.2} />
-        <pointLight position={[-5, -3, -5]} intensity={0.4} color="#4fc3f7" />
-        <RotatingGlobe />
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          autoRotate
-          autoRotateSpeed={0.5}
-        />
-      </Canvas>
+    <div className="w-full h-full relative overflow-hidden rounded-2xl">
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 animate-pulse" 
+           style={{ animationDuration: '4s' }}>
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/20 animate-spin"
+           style={{ animationDuration: '20s' }}>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-64 h-64 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 opacity-80 blur-3xl animate-pulse"
+             style={{ animationDuration: '3s' }}>
+        </div>
+      </div>
     </div>
   );
 }
