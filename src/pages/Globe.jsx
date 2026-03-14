@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, MapPin, Globe, ArrowLeft } from 'lucide-react';
+import { Search, Loader2, MapPin, Globe as GlobeIcon, ArrowLeft } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -109,7 +109,7 @@ export default function Globe() {
               </Button>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
-                  <Globe className="w-5 h-5 text-white" />
+                  <GlobeIcon className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
                   planetary
