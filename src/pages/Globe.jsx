@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, MapPin, Globe as GlobeIcon, ArrowLeft, Zap } from 'lucide-react';
+import { Search, Loader2, MapPin, ArrowLeft, Zap } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
