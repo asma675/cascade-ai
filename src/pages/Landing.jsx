@@ -105,10 +105,10 @@ export default function Landing() {
       <div className="py-20 bg-slate-50 dark:bg-slate-900/50">
         <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            <h2 className="text-5xl font-serif-display font-bold text-slate-900 dark:text-white mb-2">
               Climate intelligence platform
             </h2>
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-lg text-slate-600 dark:text-slate-400">
               Advanced risk analysis powered by AI and satellite data
             </p>
           </div>
@@ -116,10 +116,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="group cursor-pointer">
               <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-                <div className="aspect-[4/3] bg-gradient-to-br from-purple-500 to-fuchsia-600 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Zap className="w-16 h-16 text-white/90" />
-                  </div>
+                <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-800">
+                  <img src="https://images.unsplash.com/photo-1584622181563-430f63602d4b?w=600&h=450&fit=crop" alt="Heatwave" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Multi-Hazard Detection</h3>
@@ -132,10 +130,8 @@ export default function Landing() {
             
             <div className="group cursor-pointer">
               <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-                <div className="aspect-[4/3] bg-gradient-to-br from-fuchsia-500 to-pink-600 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Layers className="w-16 h-16 text-white/90" />
-                  </div>
+                <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-800">
+                  <img src="https://images.unsplash.com/photo-1611080626919-bc8985bc8ba0?w=600&h=450&fit=crop" alt="Cascading risks" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Cascading Impact Chains</h3>
@@ -148,10 +144,8 @@ export default function Landing() {
             
             <div className="group cursor-pointer">
               <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-                <div className="aspect-[4/3] bg-gradient-to-br from-pink-500 to-purple-600 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Download className="w-16 h-16 text-white/90" />
-                  </div>
+                <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-800">
+                  <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=600&h=450&fit=crop" alt="GeoJSON export" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">GeoJSON Export</h3>
