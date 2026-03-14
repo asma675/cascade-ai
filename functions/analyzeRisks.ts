@@ -247,7 +247,18 @@ function detectHazards(nasaData, city) {
 async function generateCascadingChains(base44, city, hazards, nasaData) {
   const chains = [];
   
-  for (const hazard of hazards.slice(0, 3)) {
+  // If no hazards detected, create baseline risk analysis
+  const hazardsToAnalyze = hazards.length > 0 ? hazards.slice(0, 3) : [
+    {
+      type: 'baseline_climate',
+      severity: 'low',
+      score: 3,
+      index: 'General',
+      value: 'N/A'
+    }
+  ];
+  
+  for (const hazard of hazardsToAnalyze) {
     const prompt = `You are a climate risk analyst. Given a ${hazard.type} event with ${hazard.severity} severity (score: ${hazard.score}/10) in ${city.name} (population: ${city.population}, elevation: ${city.elevation}m), generate a cascading risk chain.
 
 Current conditions:
