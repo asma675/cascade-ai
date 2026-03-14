@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import CityMap from '@/components/city/CityMap';
-import CascadingGraph from '@/components/city/CascadingGraph';
+import CascadingFlowchart from '@/components/city/CascadingFlowchart';
 import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
 import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
@@ -74,7 +74,7 @@ export default function City() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
         <div className="xl:col-span-2 space-y-6">
           <CityMap city={city} assessment={assessment} />
-          <CascadingGraph chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
+          <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
         <div className="space-y-6">
