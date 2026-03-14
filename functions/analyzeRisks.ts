@@ -254,49 +254,48 @@ function mergeDataSources(nasaData: Record<string, unknown>, weatherApiData: Rec
 function detectHazards(nasaData, city) {
   const hazards = [];
   
-  // Heatwave detection using EHF from API (30-year baseline, T95, T3, T30)
+  // Heatwave detection using EHF
   const indices = (nasaData as { indices?: { ehf?: number | null; ehf_details?: { T95: number; T3: number; T30: number; EHI_sig: number; EHI_accl: number } | null } }).indices;
   const EHF = indices?.ehf ?? null;
   const ehfDetails = indices?.ehf_details;
 
   if (EHF != null) {
-    if (EHF > 0) {
-      let severity = 'low';
-      let score = Math.min(EHF / 10, 10);
-      if (EHF > 40) severity = 'extreme';
-      else if (EHF > 20) severity = 'severe';
-      else if (EHF > 5) severity = 'moderate';
-      hazards.push({
-        type: 'heatwave',
-        severity,
-        score,
-        index: 'EHF',
-        value: EHF.toFixed(2),
-        details: ehfDetails
-          ? {
-              T95: ehfDetails.T95.toFixed(1),
-              T3: ehfDetails.T3.toFixed(1),
-              T30: ehfDetails.T30.toFixed(1),
-              EHI_sig: ehfDetails.EHI_sig.toFixed(2),
-              EHI_accl: ehfDetails.EHI_accl.toFixed(2)
-            }
-          : undefined
-      });
-    }
+    let severity = 'low';
+    let score = Math.min(Math.max(EHF, 0) / 10, 10);
+    if (EHF > 40) severity = 'extreme';
+    else if (EHF > 20) severity = 'severe';
+    else if (EHF > 5) severity = 'moderate';
+    hazards.push({
+      type: 'heatwave',
+      severity,
+      score,
+      index: 'EHF',
+      value: EHF.toFixed(2),
+      details: ehfDetails
+        ? {
+            T95: ehfDetails.T95.toFixed(1),
+            T3: ehfDetails.T3.toFixed(1),
+            T30: ehfDetails.T30.toFixed(1),
+            EHI_sig: ehfDetails.EHI_sig.toFixed(2),
+            EHI_accl: ehfDetails.EHI_accl.toFixed(2)
+          }
+        : undefined
+    });
   }
 
-  // Drought detection using SPI from monthly precipitation API (historical same-month)
+  // Precipitation/Drought detection using SPI
   const SPI = indices?.spi ?? null;
-  if (SPI != null && SPI < -1.0) {
-    let severity = 'moderate';
-    let score = Math.abs(SPI) * 2;
+  if (SPI != null) {
+    let severity = 'low';
+    let score = Math.min(Math.abs(SPI) * 2, 10);
     if (SPI < -2.0) severity = 'extreme';
     else if (SPI < -1.5) severity = 'severe';
+    else if (SPI < -1.0) severity = 'moderate';
     const spiDetails = (nasaData as { indices?: { spi_details?: { mean_mm: number; std_mm: number }; current_month_precip_mm?: number | null } }).indices;
     hazards.push({
       type: 'drought',
       severity,
-      score: Math.min(score, 10),
+      score: Math.min(Math.max(score, 0), 10),
       index: 'SPI',
       value: SPI.toFixed(2),
       details: spiDetails?.spi_details
@@ -310,52 +309,48 @@ function detectHazards(nasaData, city) {
   }
   
   // High wind detection
-  const winds = nasaData.wind_30d.map(d => d.value);
-  const maxWind = Math.max(...winds);
+  const winds = nasaData.wind_30d.map(d => d.value).filter(v => v > 0);
+  const maxWind = winds.length > 0 ? Math.max(...winds) : 0;
   
-  if (maxWind > 15) {
-    hazards.push({
-      type: 'high_wind',
-      severity: maxWind > 25 ? 'severe' : 'moderate',
-      score: Math.min(maxWind / 3, 10),
-      index: 'WS2M',
-      value: maxWind.toFixed(1)
-    });
-  }
+  hazards.push({
+    type: 'high_wind',
+    severity: maxWind > 25 ? 'severe' : maxWind > 15 ? 'moderate' : 'low',
+    score: Math.min(maxWind / 3, 10),
+    index: 'WS2M',
+    value: maxWind.toFixed(1)
+  });
   
   // Air quality detection using WeatherAPI data
   if (nasaData.current?.air_quality) {
     const aqi = nasaData.current.air_quality;
-    const epaIndex = aqi.us_epa_index;
+    const epaIndex = aqi.us_epa_index || 1;
     
-    if (epaIndex >= 3) {
-      let severity = 'moderate';
-      let score = epaIndex * 1.5;
-      
-      if (epaIndex >= 5) severity = 'extreme';
-      else if (epaIndex >= 4) severity = 'severe';
-      
-      hazards.push({
-        type: 'air_quality',
-        severity,
-        score: Math.min(score, 10),
-        index: 'US EPA AQI',
-        value: epaIndex,
-        details: {
-          pm2_5: aqi.pm2_5?.toFixed(1),
-          pm10: aqi.pm10?.toFixed(1),
-          o3: aqi.o3?.toFixed(1)
-        }
-      });
-    }
-  } else if (city.population > 5000000) {
-    // Fallback estimation for large cities
+    let severity = 'low';
+    let score = epaIndex * 1.5;
+    if (epaIndex >= 5) severity = 'extreme';
+    else if (epaIndex >= 4) severity = 'severe';
+    else if (epaIndex >= 3) severity = 'moderate';
+    
     hazards.push({
       type: 'air_quality',
-      severity: 'moderate',
-      score: 5.5,
-      index: 'AQI',
-      value: '120'
+      severity,
+      score: Math.min(score, 10),
+      index: 'US EPA AQI',
+      value: epaIndex,
+      details: {
+        pm2_5: aqi.pm2_5?.toFixed(1),
+        pm10: aqi.pm10?.toFixed(1),
+        o3: aqi.o3?.toFixed(1)
+      }
+    });
+  } else {
+    // Fallback with average data
+    hazards.push({
+      type: 'air_quality',
+      severity: 'low',
+      score: 2,
+      index: 'US EPA AQI',
+      value: 50
     });
   }
   
