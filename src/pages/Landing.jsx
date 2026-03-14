@@ -37,17 +37,20 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="relative pt-32 pb-16">
-        <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
+      {/* Hero Section with 3D Globe */}
+      <div className="relative pt-20 pb-20 overflow-hidden">
+        <div className="absolute inset-0 h-96">
+          <Interactive3DGlobe />
+        </div>
+        <div className="relative max-w-[1760px] mx-auto px-6 lg:px-10">
+          <div className="text-center max-w-3xl mx-auto mb-12 pt-96">
+            <h1 className="text-6xl lg:text-7xl font-serif-display font-bold text-slate-900 dark:text-white mb-6">
               Discover environmental risks
               <span className="block mt-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
                 in cities worldwide
               </span>
             </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400">
+            <p className="text-lg text-slate-600 dark:text-slate-400 font-light">
               AI-powered climate intelligence with real-time NASA satellite data
             </p>
           </div>
