@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Landing from './pages/Landing';
 import Globe from './pages/Globe';
-import City from './pages/City';
+import City from './pages/City.jsx';
 import Compare from './pages/Compare';
 
 const AuthenticatedApp = () => {
