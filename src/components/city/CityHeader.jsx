@@ -53,7 +53,7 @@ export default function CityHeader({ city, assessment }) {
           </Button>
         </div>
 
-        <h1 className="text-4xl font-bold text-cyan-400 mb-2">{city.name}, {city.country}</h1>
+        <h1 className="text-4xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent mb-2">{city.name}, {city.country}</h1>
         <p className="text-slate-400 mb-4">
           {city.latitude.toFixed(4)}°, {city.longitude.toFixed(4)}° • Population: {(city.population / 1000000).toFixed(2)}M • Elevation: {city.elevation}m
         </p>
