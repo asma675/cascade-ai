@@ -72,7 +72,7 @@ export default function City() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
         <div className="xl:col-span-2 space-y-6">
           <CityMap city={city} assessment={assessment} />
-          <CascadingGraph chains={assessment.cascading_chains} />
+          <CascadingGraph chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
         <div>

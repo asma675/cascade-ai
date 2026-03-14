@@ -178,20 +178,42 @@ function detectHazards(nasaData, city) {
     }
   }
   
-  // Drought detection (SPI approximation)
+  // Drought detection using Standardized Precipitation Index (SPI)
   const precipitations = nasaData.precipitation_30d.map(d => d.value);
-  const avgPrecip = precipitations.reduce((a, b) => a + b, 0) / precipitations.length;
-  const monthlyPrecip = precipitations.slice(-30).reduce((a, b) => a + b, 0);
   
-  if (monthlyPrecip < avgPrecip * 0.5) {
-    const spi = -1.5;
-    hazards.push({
-      type: 'drought',
-      severity: 'moderate',
-      score: 6.5,
-      index: 'SPI',
-      value: spi.toFixed(2)
-    });
+  if (precipitations.length >= 30) {
+    // Calculate mean and standard deviation of precipitation
+    const mean = precipitations.reduce((a, b) => a + b, 0) / precipitations.length;
+    const variance = precipitations.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / precipitations.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Calculate recent precipitation (last 30 days total)
+    const recentPrecip = precipitations.reduce((a, b) => a + b, 0);
+    
+    // SPI = (observed - mean) / stdDev
+    const SPI = stdDev > 0 ? (recentPrecip - (mean * precipitations.length)) / (stdDev * Math.sqrt(precipitations.length)) : 0;
+    
+    // Detect drought if SPI < -1.0 (moderate or worse)
+    if (SPI < -1.0) {
+      let severity = 'moderate';
+      let score = Math.abs(SPI) * 2;
+      
+      if (SPI < -2.0) severity = 'extreme';
+      else if (SPI < -1.5) severity = 'severe';
+      
+      hazards.push({
+        type: 'drought',
+        severity,
+        score: Math.min(score, 10),
+        index: 'SPI',
+        value: SPI.toFixed(2),
+        details: {
+          mean_precip: mean.toFixed(2),
+          recent_total: recentPrecip.toFixed(2),
+          std_dev: stdDev.toFixed(2)
+        }
+      });
+    }
   }
   
   // High wind detection

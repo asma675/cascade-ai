@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Activity, ChevronRight } from 'lucide-react';
 
-export default function CascadingGraph({ chains }) {
+export default function CascadingGraph({ chains, hazards }) {
   const [selectedChain, setSelectedChain] = useState(0);
 
   if (!chains || chains.length === 0) {
@@ -15,6 +15,11 @@ export default function CascadingGraph({ chains }) {
   }
 
   const chain = chains[selectedChain];
+  
+  // Find associated hazard for this chain
+  const associatedHazard = hazards?.find(h => 
+    chain.nodes?.[0]?.description?.toLowerCase().includes(h.type.toLowerCase())
+  );
 
   const layerColors = {
     hazard: 'bg-red-500',
@@ -47,6 +52,34 @@ export default function CascadingGraph({ chains }) {
           </button>
         ))}
       </div>
+
+      {/* Hazard Index Display */}
+      {associatedHazard && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Primary Hazard Index</div>
+              <div className="text-lg font-semibold text-cyan-400 capitalize">
+                {associatedHazard.type.replace('_', ' ')} - {associatedHazard.index}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-slate-500 mb-1">Index Value</div>
+              <div className="text-2xl font-bold text-orange-400">{associatedHazard.value}</div>
+            </div>
+          </div>
+          {associatedHazard.details && (
+            <div className="mt-3 pt-3 border-t border-slate-700 grid grid-cols-2 gap-3 text-xs">
+              {Object.entries(associatedHazard.details).map(([key, value]) => (
+                <div key={key}>
+                  <span className="text-slate-500">{key}: </span>
+                  <span className="text-slate-300 font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Chain metrics */}
       <div className="grid grid-cols-3 gap-4 mb-6">
