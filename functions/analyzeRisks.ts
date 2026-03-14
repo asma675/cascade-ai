@@ -43,29 +43,41 @@ Deno.serve(async (req) => {
   }
 });
 
-async function fetchNASAPowerData(city) {
+function formatDateDaily(d: Date) {
+  return d.toISOString().split('T')[0].replace(/-/g, '');
+}
+function formatDateMonthly(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}${m}`;
+}
+function daysInMonth(year: number, month: number) {
+  return new Date(year, month, 0).getDate();
+}
+
+async function fetchNASAPowerData(city: { latitude: number; longitude: number }) {
   const { latitude, longitude } = city;
-  
-  const formatDate = (d) => d.toISOString().split('T')[0].replace(/-/g, '');
   const endDate = new Date();
-  
-  // Fetch 30-year baseline for EHF calculation
+
+  // Fetch 30-year baseline for EHF (T95)
   const baselineStartDate = new Date();
   baselineStartDate.setFullYear(baselineStartDate.getFullYear() - 30);
-  
-  const baselineUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDate(baselineStartDate)}&end=${formatDate(endDate)}&format=JSON`;
-  
+  const baselineUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDateDaily(baselineStartDate)}&end=${formatDateDaily(endDate)}&format=JSON`;
   const baselineResponse = await fetch(baselineUrl);
   const baselineData = await baselineResponse.json();
-  
-  // Fetch recent 30 days for current metrics
+
+  // Fetch recent 30 days for charts and EHF T3/T30
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
-  
-  const dailyUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,PRECTOTCORR,WS2M,PS,RH2M&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDate(startDate)}&end=${formatDate(endDate)}&format=JSON`;
-  
+  const dailyUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,PRECTOTCORR,WS2M,PS,RH2M&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDateDaily(startDate)}&end=${formatDateDaily(endDate)}&format=JSON`;
   const response = await fetch(dailyUrl);
   const data = await response.json();
+
+  // Fetch monthly precipitation for SPI; API expects year-only start/end and rejects future years (e.g. 2026)
+  const endYear = Math.min(endDate.getFullYear(), 2025);
+  const monthlyUrl = `https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=PRECTOTCORR&community=AG&longitude=${longitude}&latitude=${latitude}&start=1981&end=${endYear}&format=JSON`;
+  const monthlyResponse = await fetch(monthlyUrl);
+  const monthlyData = await monthlyResponse.json();
   
   // Process data into time series
   const params = data.properties.parameter;
@@ -110,20 +122,55 @@ async function fetchNASAPowerData(city) {
   
   // Get recent max temperatures for T3 and T30 calculations
   const recentMaxTemps = dates
-    .map(date => params.T2M_MAX[date])
-    .filter(v => v !== -999);
-  
+    .map((date: string) => params.T2M_MAX[date])
+    .filter((v: number) => v !== -999);
+
+  // Monthly precipitation: compute total mm per month (API gives mm/day mean) and SPI
+  let spi: number | null = null;
+  let currentMonthPrecipMm: number | null = null;
+  let spiDetails: { mean_mm: number; std_mm: number; same_month_count: number } | null = null;
+  const monthlyParams = monthlyData?.properties?.parameter?.PRECTOTCORR;
+  if (monthlyParams && typeof monthlyParams === 'object') {
+    const monthKeys = Object.keys(monthlyParams).filter((k) => /^\d{6}$/.test(k));
+    const currentMonth = endDate.getMonth() + 1;
+    const currentYYYYMM = formatDateMonthly(endDate);
+    const sameMonthTotals: number[] = [];
+    let currentTotal = 0;
+    for (const key of monthKeys) {
+      const val = monthlyParams[key];
+      if (val == null || val === -999) continue;
+      const y = parseInt(key.substring(0, 4), 10);
+      const m = parseInt(key.substring(4, 6), 10);
+      const days = daysInMonth(y, m);
+      const totalMm = val * days;
+      if (m === currentMonth) {
+        sameMonthTotals.push(totalMm);
+        if (key === currentYYYYMM) currentTotal = totalMm;
+      }
+    }
+    if (sameMonthTotals.length >= 2) {
+      const mean = sameMonthTotals.reduce((a, b) => a + b, 0) / sameMonthTotals.length;
+      const variance = sameMonthTotals.reduce((sum, val) => sum + (val - mean) ** 2, 0) / sameMonthTotals.length;
+      const std = Math.sqrt(variance);
+      if (currentTotal > 0) currentMonthPrecipMm = currentTotal;
+      if (std > 0 && currentMonthPrecipMm != null) {
+        spi = (currentMonthPrecipMm - mean) / std;
+        spiDetails = { mean_mm: mean, std_mm: std, same_month_count: sameMonthTotals.length };
+      }
+    }
+  }
+
   return {
     temperature_30d,
     precipitation_30d,
     wind_30d,
     pressure_30d,
     humidity_30d: dates
-      .map(date => ({
+      .map((date: string) => ({
         date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
         value: params.RH2M[date]
       }))
-      .filter(d => d.value !== -999),
+      .filter((d: { value: number }) => d.value !== -999),
     current: {
       temperature: temperature_30d[temperature_30d.length - 1]?.value,
       precipitation: precipitation_30d[precipitation_30d.length - 1]?.value,
@@ -132,7 +179,26 @@ async function fetchNASAPowerData(city) {
     baseline: {
       T95,
       recentMaxTemps
-    }
+    },
+    indices: (() => {
+      let ehf: number | null = null;
+      let ehfDetails: { T95: number; T3: number; T30: number; EHI_sig: number; EHI_accl: number } | null = null;
+      if (recentMaxTemps.length >= 30) {
+        const T3 = recentMaxTemps.slice(-3).reduce((a, b) => a + b, 0) / 3;
+        const T30 = recentMaxTemps.reduce((a, b) => a + b, 0) / recentMaxTemps.length;
+        const EHI_sig = T3 - T95;
+        const EHI_accl = T3 - T30;
+        ehf = EHI_sig * Math.max(1, EHI_accl);
+        ehfDetails = { T95, T3, T30, EHI_sig, EHI_accl };
+      }
+      return {
+        spi: spi != null ? spi : null,
+        spi_details: spiDetails,
+        current_month_precip_mm: currentMonthPrecipMm,
+        ehf,
+        ehf_details: ehfDetails
+      };
+    })()
   };
 }
 
@@ -171,17 +237,16 @@ async function fetchWeatherAPIData(city) {
   };
 }
 
-function mergeDataSources(nasaData, weatherApiData) {
+function mergeDataSources(nasaData: Record<string, unknown>, weatherApiData: Record<string, unknown> | null) {
   if (!weatherApiData) {
     return nasaData;
   }
-  
   return {
     ...nasaData,
     current: {
-      ...nasaData.current,
-      ...weatherApiData.current,
-      air_quality: weatherApiData.air_quality
+      ...(nasaData.current as object),
+      ...(weatherApiData.current as object),
+      air_quality: (weatherApiData as { air_quality?: unknown }).air_quality
     }
   };
 }
@@ -189,87 +254,59 @@ function mergeDataSources(nasaData, weatherApiData) {
 function detectHazards(nasaData, city) {
   const hazards = [];
   
-  // Heatwave detection using proper EHF calculation
-  if (nasaData.baseline && nasaData.baseline.recentMaxTemps.length >= 30) {
-    const { T95, recentMaxTemps } = nasaData.baseline;
-    
-    // T3: Average of last 3 days max temperature
-    const T3 = recentMaxTemps.slice(-3).reduce((a, b) => a + b, 0) / 3;
-    
-    // T30: Average of last 30 days max temperature
-    const T30 = recentMaxTemps.reduce((a, b) => a + b, 0) / recentMaxTemps.length;
-    
-    // EHI_sig: Significance component
-    const EHI_sig = T3 - T95;
-    
-    // EHI_accl: Acclimatization component
-    const EHI_accl = T3 - T30;
-    
-    // EHF: Excess Heat Factor
-    const EHF = EHI_sig * Math.max(1, EHI_accl);
-    
-    // Detect heatwave if EHF is positive
+  // Heatwave detection using EHF from API (30-year baseline, T95, T3, T30)
+  const indices = (nasaData as { indices?: { ehf?: number | null; ehf_details?: { T95: number; T3: number; T30: number; EHI_sig: number; EHI_accl: number } | null } }).indices;
+  const EHF = indices?.ehf ?? null;
+  const ehfDetails = indices?.ehf_details;
+
+  if (EHF != null) {
     if (EHF > 0) {
       let severity = 'low';
       let score = Math.min(EHF / 10, 10);
-      
       if (EHF > 40) severity = 'extreme';
       else if (EHF > 20) severity = 'severe';
       else if (EHF > 5) severity = 'moderate';
-      
       hazards.push({
         type: 'heatwave',
         severity,
         score,
         index: 'EHF',
         value: EHF.toFixed(2),
-        details: {
-          T95: T95.toFixed(1),
-          T3: T3.toFixed(1),
-          T30: T30.toFixed(1),
-          EHI_sig: EHI_sig.toFixed(2),
-          EHI_accl: EHI_accl.toFixed(2)
-        }
+        details: ehfDetails
+          ? {
+              T95: ehfDetails.T95.toFixed(1),
+              T3: ehfDetails.T3.toFixed(1),
+              T30: ehfDetails.T30.toFixed(1),
+              EHI_sig: ehfDetails.EHI_sig.toFixed(2),
+              EHI_accl: ehfDetails.EHI_accl.toFixed(2)
+            }
+          : undefined
       });
     }
   }
-  
-  // Drought detection using Standardized Precipitation Index (SPI)
-  const precipitations = nasaData.precipitation_30d.map(d => d.value);
-  
-  if (precipitations.length >= 30) {
-    // Calculate mean and standard deviation of precipitation
-    const mean = precipitations.reduce((a, b) => a + b, 0) / precipitations.length;
-    const variance = precipitations.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / precipitations.length;
-    const stdDev = Math.sqrt(variance);
-    
-    // Calculate recent precipitation (last 30 days total)
-    const recentPrecip = precipitations.reduce((a, b) => a + b, 0);
-    
-    // SPI = (observed - mean) / stdDev
-    const SPI = stdDev > 0 ? (recentPrecip - (mean * precipitations.length)) / (stdDev * Math.sqrt(precipitations.length)) : 0;
-    
-    // Detect drought if SPI < -1.0 (moderate or worse)
-    if (SPI < -1.0) {
-      let severity = 'moderate';
-      let score = Math.abs(SPI) * 2;
-      
-      if (SPI < -2.0) severity = 'extreme';
-      else if (SPI < -1.5) severity = 'severe';
-      
-      hazards.push({
-        type: 'drought',
-        severity,
-        score: Math.min(score, 10),
-        index: 'SPI',
-        value: SPI.toFixed(2),
-        details: {
-          mean_precip: mean.toFixed(2),
-          recent_total: recentPrecip.toFixed(2),
-          std_dev: stdDev.toFixed(2)
-        }
-      });
-    }
+
+  // Drought detection using SPI from monthly precipitation API (historical same-month)
+  const SPI = indices?.spi ?? null;
+  if (SPI != null && SPI < -1.0) {
+    let severity = 'moderate';
+    let score = Math.abs(SPI) * 2;
+    if (SPI < -2.0) severity = 'extreme';
+    else if (SPI < -1.5) severity = 'severe';
+    const spiDetails = (nasaData as { indices?: { spi_details?: { mean_mm: number; std_mm: number }; current_month_precip_mm?: number | null } }).indices;
+    hazards.push({
+      type: 'drought',
+      severity,
+      score: Math.min(score, 10),
+      index: 'SPI',
+      value: SPI.toFixed(2),
+      details: spiDetails?.spi_details
+        ? {
+            mean_precip: spiDetails.spi_details.mean_mm.toFixed(2),
+            recent_total: (spiDetails.current_month_precip_mm ?? 0).toFixed(2),
+            std_dev: spiDetails.spi_details.std_mm.toFixed(2)
+          }
+        : undefined
+    });
   }
   
   // High wind detection
