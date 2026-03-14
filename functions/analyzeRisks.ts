@@ -135,9 +135,6 @@ async function fetchNASAPowerData(city: { latitude: number; longitude: number })
       return (tmax + tmin) / 2;
     })
     .filter((v: number | null): v is number => v != null);
-  const recentMaxTemps = dates
-    .map((date: string) => params.T2M_MAX[date])
-    .filter((v: number) => v !== -999);
 
   // SPI-12: 12-month rolling precipitation total, historical same-ending-month totals, z-score
   let spi12: number | null = null;
@@ -215,7 +212,6 @@ async function fetchNASAPowerData(city: { latitude: number; longitude: number })
     },
     baseline: {
       T95,
-      recentMaxTemps,
       recentDailyMeans
     },
     indices: (() => {
@@ -226,7 +222,7 @@ async function fetchNASAPowerData(city: { latitude: number; longitude: number })
         const T30 = recentDailyMeans.reduce((a, b) => a + b, 0) / recentDailyMeans.length;
         const EHI_sig = T3 - T95;
         const EHI_accl = T3 - T30;
-        ehf = EHI_sig * Math.max(1, EHI_accl);
+        ehf = Math.max(0, EHI_sig * Math.max(1, EHI_accl));
         ehfDetails = { T95, T3, T30, EHI_sig, EHI_accl };
       }
       return {
