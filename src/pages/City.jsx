@@ -77,11 +77,9 @@ export default function City() {
           <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
-        <div>
-          <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
         <div className="space-y-6">
           <CurrentConditions environmentalData={assessment.environmental_data} />
-          <EnvironmentalMetrics environmentalData={assessment.environmental_data} />
+          <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
         </div>
       </div>
     </div>
