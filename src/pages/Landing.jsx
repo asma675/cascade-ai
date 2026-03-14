@@ -1,24 +1,38 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Globe, Zap, Layers, Download, ArrowRight, Sparkles } from 'lucide-react';
-import Hero3DGlobe from '@/components/landing/Hero3DGlobe';
+import { Globe, Zap, Layers, Download, Search } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 
 export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-500 overflow-hidden relative">
-      {/* Animated background gradients */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-purple-500/20 via-fuchsia-500/20 to-pink-500/20 dark:from-purple-600/10 dark:via-fuchsia-600/10 dark:to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{animationDuration: '8s'}}></div>
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-violet-500/20 via-purple-500/20 to-indigo-500/20 dark:from-violet-600/10 dark:via-purple-600/10 dark:to-indigo-600/10 rounded-full blur-3xl animate-pulse" style={{animationDuration: '10s', animationDelay: '2s'}}></div>
-      </div>
-      {/* Theme Toggle */}
-      <div className="fixed top-8 right-8 z-50">
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen bg-white dark:bg-slate-950">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-[1760px] mx-auto px-6 lg:px-10 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Globe className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                planetary
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <ThemeToggle />
+              <Button
+                onClick={() => navigate('/Globe')}
+                className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white rounded-full px-6 shadow-lg shadow-purple-500/30"
+              >
+                Explore
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Hero Section */}
       <div className="relative pt-32 pb-16">
