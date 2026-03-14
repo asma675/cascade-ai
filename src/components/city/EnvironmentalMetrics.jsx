@@ -35,11 +35,14 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
 
   const computedEHF = useMemo(() => {
     if (indices.ehf != null) return null;
+    const recentDailyMeansRaw = baseline?.recentDailyMeans ?? baseline?.recent_daily_means;
     const recentMaxTempsRaw = baseline?.recentMaxTemps ?? baseline?.recent_max_temps;
     const T95Raw = baseline?.T95 ?? baseline?.t95;
-    let arr = Array.isArray(recentMaxTempsRaw)
-      ? recentMaxTempsRaw.map((v) => Number(v)).filter((v) => !Number.isNaN(v))
-      : [];
+    let arr = Array.isArray(recentDailyMeansRaw)
+      ? recentDailyMeansRaw.map((v) => Number(v)).filter((v) => !Number.isNaN(v))
+      : Array.isArray(recentMaxTempsRaw)
+        ? recentMaxTempsRaw.map((v) => Number(v)).filter((v) => !Number.isNaN(v))
+        : [];
     let T95 = T95Raw != null ? Number(T95Raw) : NaN;
     const minDays = 21;
     if (arr.length < minDays && environmentalData.temperature_30d?.length >= minDays) {
@@ -80,33 +83,54 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
         if (cancelled) return;
         const monthlyParams = data?.properties?.parameter?.PRECTOTCORR;
         if (!monthlyParams || typeof monthlyParams !== 'object') return;
-        const monthKeys = Object.keys(monthlyParams).filter((k) => /^\d{6}$/.test(k));
-        if (monthKeys.length === 0) return;
-        const currentYYYYMM = monthKeys.sort()[monthKeys.length - 1];
-        const currentMonth = parseInt(currentYYYYMM.substring(4, 6), 10);
-        const sameMonthTotals = [];
-        let currentTotal = 0;
+        const monthKeys = Object.keys(monthlyParams).filter((k) => /^\d{6}$/.test(k)).sort();
+        if (monthKeys.length < 12) return;
+        const monthlyTotalsMm = {};
         for (const key of monthKeys) {
           const val = monthlyParams[key];
           if (val == null || val === -999) continue;
           const y = parseInt(key.substring(0, 4), 10);
           const m = parseInt(key.substring(4, 6), 10);
-          const days = daysInMonth(y, m);
-          const totalMm = val * days;
-          if (m === currentMonth) {
-            sameMonthTotals.push(totalMm);
-            if (key === currentYYYYMM) currentTotal = totalMm;
-          }
+          monthlyTotalsMm[key] = val * daysInMonth(y, m);
         }
-        if (sameMonthTotals.length >= 2 && currentTotal > 0) {
-          const mean = sameMonthTotals.reduce((a, b) => a + b, 0) / sameMonthTotals.length;
-          const variance = sameMonthTotals.reduce((s, v) => s + (v - mean) ** 2, 0) / sameMonthTotals.length;
+        const lastKey = monthKeys[monthKeys.length - 1];
+        const endYear = parseInt(lastKey.substring(0, 4), 10);
+        const endMonth = parseInt(lastKey.substring(4, 6), 10);
+        const historical12mo = [];
+        for (let year = 1981; year <= endYear; year++) {
+          let sum = 0;
+          let hasAll = true;
+          for (let i = 0; i < 12; i++) {
+            let m = endMonth - 11 + i;
+            let y = year;
+            if (m <= 0) {
+              m += 12;
+              y -= 1;
+            }
+            const k = `${y}${String(m).padStart(2, '0')}`;
+            if (monthlyTotalsMm[k] == null) {
+              hasAll = false;
+              break;
+            }
+            sum += monthlyTotalsMm[k];
+          }
+          if (hasAll) historical12mo.push(sum);
+        }
+        if (historical12mo.length >= 2) {
+          const current12mo = historical12mo[historical12mo.length - 1];
+          const mean = historical12mo.reduce((a, b) => a + b, 0) / historical12mo.length;
+          const variance = historical12mo.reduce((s, v) => s + (v - mean) ** 2, 0) / historical12mo.length;
           const std = Math.sqrt(variance);
           if (std > 0) {
-            const spiVal = (currentTotal - mean) / std;
+            const spiVal = (current12mo - mean) / std;
             setClientSpi(spiVal);
-            setClientSpiDetails({ mean_mm: mean, std_mm: std, same_month_count: sameMonthTotals.length });
-            setClientCurrentMonthPrecipMm(currentTotal);
+            setClientSpiDetails({
+              mean_12mo_mm: mean,
+              std_12mo_mm: std,
+              n_years: historical12mo.length,
+              current_12mo_mm: current12mo
+            });
+            setClientCurrentMonthPrecipMm(current12mo);
           }
         }
       })
@@ -186,19 +210,19 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
       indexBlock: (
         <>
           <IndexBadge
-            label="SPI (Standardized Precipitation Index)"
-            value={spi != null ? spi.toFixed(2) : null}
+            label="SPI-12 (12-month Standardized Precipitation Index)"
+            value={spi != null ? Number(spi).toFixed(2) : null}
             sub={
-              currentMonthPrecipMm != null
-                ? `Current month total: ${currentMonthPrecipMm.toFixed(1)} mm`
+              (spiDetails?.current_12mo_mm ?? currentMonthPrecipMm) != null
+                ? `Current 12-month total: ${Number(spiDetails?.current_12mo_mm ?? currentMonthPrecipMm).toFixed(0)} mm`
                 : null
             }
           />
           {spiDetails && (
             <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
-              <span>Mean (same month): {Number(spiDetails.mean_mm).toFixed(1)} mm</span>
-              <span>Std dev: {Number(spiDetails.std_mm).toFixed(1)} mm</span>
-              <span>n: {spiDetails.same_month_count} years</span>
+              <span>Mean 12-mo: {Number(spiDetails.mean_12mo_mm ?? spiDetails.mean_mm ?? 0).toFixed(0)} mm</span>
+              <span>Std dev: {Number(spiDetails.std_12mo_mm ?? spiDetails.std_mm ?? 0).toFixed(0)} mm</span>
+              <span>n: {spiDetails.n_years ?? spiDetails.same_month_count ?? 0} years</span>
             </div>
           )}
         </>
