@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -7,7 +7,13 @@ function RotatingGlobe() {
   const meshRef = useRef();
   const cloudsRef = useRef();
 
-  useFrame((state) => {
+  const [earthTexture, earthBump, cloudsTexture] = useLoader(THREE.TextureLoader, [
+    'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+    'https://unpkg.com/three-globe/example/img/earth-topology.png',
+    'https://unpkg.com/three-globe/example/img/earth-clouds.png'
+  ]);
+
+  useFrame(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += 0.002;
     }
@@ -21,8 +27,8 @@ function RotatingGlobe() {
       {/* Earth */}
       <Sphere ref={meshRef} args={[2.5, 64, 64]}>
         <meshStandardMaterial
-          map={new THREE.TextureLoader().load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')}
-          bumpMap={new THREE.TextureLoader().load('https://unpkg.com/three-globe/example/img/earth-topology.png')}
+          map={earthTexture}
+          bumpMap={earthBump}
           bumpScale={0.05}
         />
       </Sphere>
@@ -30,7 +36,7 @@ function RotatingGlobe() {
       {/* Clouds */}
       <Sphere ref={cloudsRef} args={[2.52, 64, 64]}>
         <meshStandardMaterial
-          map={new THREE.TextureLoader().load('https://unpkg.com/three-globe/example/img/earth-clouds.png')}
+          map={cloudsTexture}
           transparent
           opacity={0.4}
         />
