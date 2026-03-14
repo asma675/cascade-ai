@@ -1,14 +1,26 @@
 import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Card } from '@/components/ui/card';
 import { MapPin, Thermometer, Droplets, Wind, Flame } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 export default function CityMap({ city, assessment }) {
   const hazardColors = {
-    heatwave: 'bg-red-500',
-    drought: 'bg-amber-500',
-    flood: 'bg-blue-500',
-    wildfire: 'bg-orange-500',
-    air_quality: 'bg-purple-500'
+    heatwave: '#ef4444',
+    drought: '#f59e0b',
+    flood: '#3b82f6',
+    wildfire: '#f97316',
+    air_quality: '#a855f7',
+    high_wind: '#06b6d4'
   };
 
   return (
@@ -18,22 +30,57 @@ export default function CityMap({ city, assessment }) {
         Hazard Map
       </h2>
 
-      <div className="relative bg-slate-800 rounded-lg h-96 overflow-hidden">
-        {/* Map placeholder - in production would use Mapbox GL JS */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-16 h-16 text-cyan-400 mx-auto mb-2" />
-            <p className="text-slate-400">Map centered on {city.name}</p>
-            <p className="text-xs text-slate-500 mt-1">{city.latitude.toFixed(4)}°, {city.longitude.toFixed(4)}°</p>
-          </div>
-        </div>
+      <div className="relative rounded-lg h-96 overflow-hidden">
+        <MapContainer
+          center={[city.latitude, city.longitude]}
+          zoom={10}
+          style={{ height: '100%', width: '100%' }}
+          className="z-0"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          <Marker position={[city.latitude, city.longitude]}>
+            <Popup>
+              <div className="text-center p-2">
+                <h3 className="font-bold text-lg">{city.name}</h3>
+                <p className="text-sm text-slate-600">{city.country}</p>
+              </div>
+            </Popup>
+          </Marker>
+
+          {assessment.hazards_detected.map((hazard, idx) => (
+            <Circle
+              key={idx}
+              center={[city.latitude, city.longitude]}
+              radius={5000 + (idx * 2000)}
+              pathOptions={{
+                color: hazardColors[hazard.type] || '#64748b',
+                fillColor: hazardColors[hazard.type] || '#64748b',
+                fillOpacity: 0.2,
+                weight: 2
+              }}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h4 className="font-bold capitalize">{hazard.type.replace('_', ' ')}</h4>
+                  <p className="text-sm">Severity: {hazard.severity}</p>
+                  <p className="text-sm">Score: {hazard.score}/10</p>
+                  <p className="text-xs text-slate-600 mt-1">{hazard.index}: {hazard.value}</p>
+                </div>
+              </Popup>
+            </Circle>
+          ))}
+        </MapContainer>
 
         {/* Hazard overlay indicators */}
-        <div className="absolute bottom-4 left-4 space-y-2">
+        <div className="absolute bottom-4 left-4 space-y-2 z-[1000]">
           {assessment.hazards_detected.map((hazard, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-slate-900/90 px-3 py-2 rounded-lg border border-slate-700">
-              <div className={`w-3 h-3 rounded-full ${hazardColors[hazard.type] || 'bg-slate-500'}`}></div>
-              <span className="text-slate-200 text-sm font-medium">{hazard.type}</span>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: hazardColors[hazard.type] || '#64748b' }}></div>
+              <span className="text-slate-200 text-sm font-medium capitalize">{hazard.type.replace('_', ' ')}</span>
               <span className="text-xs text-slate-400">({hazard.severity})</span>
             </div>
           ))}
