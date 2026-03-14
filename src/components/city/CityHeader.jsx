@@ -47,7 +47,7 @@ export default function CityHeader({ city, assessment }) {
             </Button>
           </Link>
           
-          <Button onClick={handleExportGeoJSON} className="bg-cyan-500 hover:bg-cyan-600 text-slate-950">
+          <Button onClick={handleExportGeoJSON} className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white shadow-lg shadow-purple-500/30">
             <Download className="w-4 h-4 mr-2" />
             Export GeoJSON
           </Button>
