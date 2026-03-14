@@ -56,35 +56,45 @@ async function fetchNASAPowerData(city) {
   const params = data.properties.parameter;
   const dates = Object.keys(params.T2M || {});
   
-  const temperature_30d = dates.map(date => ({
-    date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
-    value: params.T2M[date]
-  }));
+  const temperature_30d = dates
+    .map(date => ({
+      date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
+      value: params.T2M[date]
+    }))
+    .filter(d => d.value !== -999);
   
-  const precipitation_30d = dates.map(date => ({
-    date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
-    value: params.PRECTOTCORR[date]
-  }));
+  const precipitation_30d = dates
+    .map(date => ({
+      date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
+      value: params.PRECTOTCORR[date]
+    }))
+    .filter(d => d.value !== -999);
   
-  const wind_30d = dates.map(date => ({
-    date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
-    value: params.WS2M[date]
-  }));
+  const wind_30d = dates
+    .map(date => ({
+      date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
+      value: params.WS2M[date]
+    }))
+    .filter(d => d.value !== -999);
   
-  const pressure_30d = dates.map(date => ({
-    date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
-    value: params.PS[date]
-  }));
+  const pressure_30d = dates
+    .map(date => ({
+      date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
+      value: params.PS[date]
+    }))
+    .filter(d => d.value !== -999);
   
   return {
     temperature_30d,
     precipitation_30d,
     wind_30d,
     pressure_30d,
-    humidity_30d: dates.map(date => ({
-      date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
-      value: params.RH2M[date]
-    })),
+    humidity_30d: dates
+      .map(date => ({
+        date: date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8),
+        value: params.RH2M[date]
+      }))
+      .filter(d => d.value !== -999),
     current: {
       temperature: temperature_30d[temperature_30d.length - 1]?.value,
       precipitation: precipitation_30d[precipitation_30d.length - 1]?.value,
