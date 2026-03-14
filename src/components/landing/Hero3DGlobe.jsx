@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 function RotatingGlobe() {
@@ -18,34 +18,37 @@ function RotatingGlobe() {
 
   return (
     <group>
-      {/* Earth - Blue/Green gradient effect */}
-      <Sphere ref={meshRef} args={[2.5, 64, 64]}>
+      {/* Earth */}
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[2.5, 64, 64]} />
         <meshStandardMaterial
           color="#0ea5e9"
           metalness={0.3}
           roughness={0.7}
         />
-      </Sphere>
+      </mesh>
       
-      {/* Cloud layer effect */}
-      <Sphere ref={cloudsRef} args={[2.52, 32, 32]}>
+      {/* Cloud layer */}
+      <mesh ref={cloudsRef}>
+        <sphereGeometry args={[2.52, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
-          transparent
+          transparent={true}
           opacity={0.15}
           roughness={1}
         />
-      </Sphere>
+      </mesh>
 
       {/* Atmosphere glow */}
-      <Sphere args={[2.6, 64, 64]}>
+      <mesh>
+        <sphereGeometry args={[2.6, 64, 64]} />
         <meshBasicMaterial
           color="#4fc3f7"
-          transparent
+          transparent={true}
           opacity={0.1}
           side={THREE.BackSide}
         />
-      </Sphere>
+      </mesh>
     </group>
   );
 }
