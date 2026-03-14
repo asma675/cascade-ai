@@ -94,7 +94,7 @@ export default function Globe() {
 
   return (
     <div className="h-screen bg-slate-950 flex flex-col">
-      <div className="p-6 border-b border-slate-800">
+      <div className="p-6 border-b border-slate-800 relative z-10">
         <h1 className="text-3xl font-bold text-cyan-400 mb-4">Global City Explorer</h1>
         <Card className="bg-slate-900/95 backdrop-blur border-slate-800 p-4 max-w-2xl relative">
           <div className="relative">
@@ -113,7 +113,7 @@ export default function Globe() {
 
           {/* Search Results Dropdown */}
           {showResults && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 mx-4">
+            <div className="absolute top-full left-4 right-4 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-96 overflow-y-auto z-[9999]">
               {searchResults.map((result, idx) => (
                 <button
                   key={idx}
@@ -133,7 +133,7 @@ export default function Globe() {
           )}
 
           {showResults && searchResults.length === 0 && !isSearching && searchQuery.length >= 2 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-4 mx-4 text-slate-400 text-sm">
+            <div className="absolute top-full left-4 right-4 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-4 text-slate-400 text-sm z-[9999]">
               No cities found for "{searchQuery}"
             </div>
           )}
