@@ -1,70 +1,182 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Globe, AlertTriangle, TrendingUp, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Globe, Zap, Layers, Download, Search } from 'lucide-react';
+import ThemeToggle from '@/components/landing/ThemeToggle';
 
 export default function Landing() {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-[1760px] mx-auto px-6 lg:px-10 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Globe className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                planetary
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <ThemeToggle />
+              <Button
+                onClick={() => navigate('/Globe')}
+                className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white rounded-full px-6 shadow-lg shadow-purple-500/30"
+              >
+                Explore
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <div className="relative min-h-screen flex flex-col items-center justify-center px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent"></div>
-        
-        <div className="relative z-10 max-w-5xl mx-auto text-center">
-          <div className="flex justify-center mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 bg-cyan-500/20 blur-3xl rounded-full"></div>
-              <Globe className="w-24 h-24 text-cyan-400 relative animate-pulse" />
+      <div className="relative pt-32 pb-16">
+        <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
+              Discover environmental risks
+              <span className="block mt-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
+                in cities worldwide
+              </span>
+            </h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400">
+              AI-powered climate intelligence with real-time NASA satellite data
+            </p>
+          </div>
+
+          {/* Search Bar */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="bg-white dark:bg-slate-900 rounded-full shadow-xl shadow-purple-500/10 border border-slate-200 dark:border-slate-800 p-2">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => navigate('/Globe')}
+                  className="flex-1 text-left px-6 py-4 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white mb-1">Where</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Search cities</div>
+                </button>
+                <div className="w-px h-12 bg-slate-200 dark:bg-slate-800"></div>
+                <button className="flex-1 text-left px-6 py-4 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white mb-1">Analysis Type</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Risk assessment</div>
+                </button>
+                <button 
+                  onClick={() => navigate('/Globe')}
+                  className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white p-4 rounded-full shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <h1 className="text-7xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
-            Planetary Risk AI
-          </h1>
-          
-          <p className="text-2xl text-slate-300 mb-4 max-w-3xl mx-auto leading-relaxed">
-            Predicting cascading environmental, infrastructure, and humanitarian risks for cities worldwide
-          </p>
-
-          <p className="text-lg text-slate-400 mb-12 max-w-2xl mx-auto">
-            AI-powered climate intelligence platform for emergency planners and government decision-makers
-          </p>
-
-          <Link to="/Globe">
-            <Button className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 text-lg px-8 py-6 rounded-lg font-semibold shadow-lg shadow-cyan-500/50 transition-all hover:shadow-cyan-500/70">
-              <Globe className="w-6 h-6 mr-2" />
-              Launch Globe Explorer
-            </Button>
-          </Link>
-        </div>
-
-        {/* Feature Cards */}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mt-20">
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-xl p-6 hover:border-cyan-500/50 transition-all">
-            <AlertTriangle className="w-12 h-12 text-amber-400 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-100 mb-2">Hazard Detection</h3>
-            <p className="text-slate-400">
-              Scientific indices for heatwaves, droughts, floods, wildfires, and air quality using NASA POWER data
-            </p>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-xl p-6 hover:border-cyan-500/50 transition-all">
-            <Activity className="w-12 h-12 text-cyan-400 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-100 mb-2">Cascading Analysis</h3>
-            <p className="text-slate-400">
-              AI-powered prediction of how climate hazards cascade through infrastructure and populations
-            </p>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-xl p-6 hover:border-cyan-500/50 transition-all">
-            <TrendingUp className="w-12 h-12 text-green-400 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-100 mb-2">GIS-Ready Exports</h3>
-            <p className="text-slate-400">
-              Export risk assessments as GeoJSON, shapefiles, and CSV for ArcGIS and emergency planning systems
-            </p>
+          {/* Stats */}
+          <div className="flex items-center justify-center gap-12 text-center">
+            <div>
+              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">30+</div>
+              <div className="text-sm text-slate-600 dark:text-slate-500 mt-1">Climate Indices</div>
+            </div>
+            <div className="w-px h-12 bg-slate-200 dark:bg-slate-800"></div>
+            <div>
+              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">Live</div>
+              <div className="text-sm text-slate-600 dark:text-slate-500 mt-1">NASA Data</div>
+            </div>
+            <div className="w-px h-12 bg-slate-200 dark:bg-slate-800"></div>
+            <div>
+              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">Global</div>
+              <div className="text-sm text-slate-600 dark:text-slate-500 mt-1">Coverage</div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Features Section */}
+      <div className="py-20 bg-slate-50 dark:bg-slate-900/50">
+        <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Climate intelligence platform
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Advanced risk analysis powered by AI and satellite data
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="group cursor-pointer">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                <div className="aspect-[4/3] bg-gradient-to-br from-purple-500 to-fuchsia-600 relative overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Zap className="w-16 h-16 text-white/90" />
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Multi-Hazard Detection</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Heatwave, drought, air quality, and wind risk analysis
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="group cursor-pointer">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                <div className="aspect-[4/3] bg-gradient-to-br from-fuchsia-500 to-pink-600 relative overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Layers className="w-16 h-16 text-white/90" />
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Cascading Impact Chains</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    AI-generated probabilistic risk propagation analysis
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="group cursor-pointer">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                <div className="aspect-[4/3] bg-gradient-to-br from-pink-500 to-purple-600 relative overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Download className="w-16 h-16 text-white/90" />
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">GeoJSON Export</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Export to QGIS, ArcGIS, and geospatial platforms
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="py-12 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
+        <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Globe className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                planetary
+              </span>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              AI-powered climate risk intelligence platform
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

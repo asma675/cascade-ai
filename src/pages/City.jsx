@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import CityMap from '@/components/city/CityMap';
-import CascadingGraph from '@/components/city/CascadingGraph';
+import CascadingFlowchart from '@/components/city/CascadingFlowchart';
 import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
+import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -73,16 +74,14 @@ export default function City() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
         <div className="xl:col-span-2 space-y-6">
           <CityMap city={city} assessment={assessment} />
-          <CascadingGraph chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
+          <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
-<<<<<<< Updated upstream
         <div>
-=======
+          <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
         <div className="space-y-6">
           <CurrentConditions environmentalData={assessment.environmental_data} />
->>>>>>> Stashed changes
-          <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
+          <EnvironmentalMetrics environmentalData={assessment.environmental_data} />
         </div>
       </div>
     </div>

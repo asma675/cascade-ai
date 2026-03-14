@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Search, Loader2, MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { Button } from '@/components/ui/button';
+import { Search, Loader2, MapPin, Globe as GlobeIcon, ArrowLeft, Zap } from 'lucide-react';
+import ThemeToggle from '@/components/landing/ThemeToggle';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -17,12 +17,77 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+function DarkModeHandler() {
+  const map = useMap();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  return null;
+}
+
+const northAmericanCapitals = [
+  { name: 'Washington D.C.', country: 'United States', latitude: 38.9072, longitude: -77.0369, population: 700000 },
+  { name: 'Ottawa', country: 'Canada', latitude: 45.4215, longitude: -75.6972, population: 1000000 },
+  { name: 'Toronto', country: 'Canada (Ontario)', latitude: 43.6532, longitude: -79.3832, population: 2930000 },
+  { name: 'Victoria', country: 'Canada (British Columbia)', latitude: 48.4284, longitude: -123.3656, population: 85000 },
+  { name: 'Edmonton', country: 'Canada (Alberta)', latitude: 53.5461, longitude: -113.4938, population: 972000 },
+  { name: 'Regina', country: 'Canada (Saskatchewan)', latitude: 50.4452, longitude: -104.6189, population: 215000 },
+  { name: 'Winnipeg', country: 'Canada (Manitoba)', latitude: 49.8951, longitude: -97.1384, population: 749000 },
+  { name: 'Quebec City', country: 'Canada (Quebec)', latitude: 46.8139, longitude: -71.2080, population: 542000 },
+  { name: 'Fredericton', country: 'Canada (New Brunswick)', latitude: 45.9636, longitude: -66.6431, population: 58000 },
+  { name: 'Halifax', country: 'Canada (Nova Scotia)', latitude: 44.6488, longitude: -63.5752, population: 403000 },
+  { name: 'Charlottetown', country: 'Canada (Prince Edward Island)', latitude: 46.2382, longitude: -63.1311, population: 36000 },
+  { name: "St. John's", country: 'Canada (Newfoundland and Labrador)', latitude: 47.5615, longitude: -52.7126, population: 108000 },
+  { name: 'Whitehorse', country: 'Canada (Yukon)', latitude: 60.7212, longitude: -135.0568, population: 25000 },
+  { name: 'Yellowknife', country: 'Canada (Northwest Territories)', latitude: 62.4540, longitude: -114.3718, population: 20000 },
+  { name: 'Iqaluit', country: 'Canada (Nunavut)', latitude: 63.7467, longitude: -68.5170, population: 7700 },
+  { name: 'Mexico City', country: 'Mexico', latitude: 19.4326, longitude: -99.1332, population: 9200000 },
+  { name: 'Guatemala City', country: 'Guatemala', latitude: 14.6349, longitude: -90.5069, population: 3000000 },
+  { name: 'Belmopan', country: 'Belize', latitude: 17.2510, longitude: -88.7590, population: 20000 },
+  { name: 'San Salvador', country: 'El Salvador', latitude: 13.6929, longitude: -89.2182, population: 570000 },
+  { name: 'Tegucigalpa', country: 'Honduras', latitude: 14.0723, longitude: -87.1921, population: 1400000 },
+  { name: 'Managua', country: 'Nicaragua', latitude: 12.1364, longitude: -86.2514, population: 1050000 },
+  { name: 'San José', country: 'Costa Rica', latitude: 9.9281, longitude: -84.0907, population: 340000 },
+  { name: 'Panama City', country: 'Panama', latitude: 8.9824, longitude: -79.5199, population: 880000 },
+  { name: 'Havana', country: 'Cuba', latitude: 23.1136, longitude: -82.3666, population: 2100000 },
+  { name: 'Kingston', country: 'Jamaica', latitude: 17.9714, longitude: -76.7929, population: 670000 },
+  { name: 'Port-au-Prince', country: 'Haiti', latitude: 18.5944, longitude: -72.3074, population: 987000 },
+  { name: 'Santo Domingo', country: 'Dominican Republic', latitude: 18.4861, longitude: -69.9312, population: 965000 },
+  { name: 'Nassau', country: 'Bahamas', latitude: 25.0443, longitude: -77.3504, population: 275000 },
+];
+
 export default function Globe() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [hoveredCity, setHoveredCity] = useState(null);
+  const [openPopup, setOpenPopup] = useState(null);
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
 
   const { data: cities = [], isLoading } = useQuery({
     queryKey: ['cities'],
@@ -78,11 +143,31 @@ export default function Globe() {
     }
   };
 
-  const handleCityClick = (city) => {
-    navigate(`/City/${encodeURIComponent(city.name)}`);
+  const handleCityClick = async (city) => {
+    // Check if city exists in database
+    const existingCity = cities.find(c => 
+      c.name === city.name && c.country === city.country
+    );
+    
+    if (existingCity) {
+      navigate(`/City/${encodeURIComponent(existingCity.name)}`);
+    } else {
+      // Create new city entry
+      const newCity = await base44.entities.City.create({
+        name: city.name,
+        country: city.country,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        population: city.population,
+        climate_zone: city.climate_zone || 'temperate'
+      });
+      navigate(`/City/${encodeURIComponent(newCity.name)}`);
+    }
   };
 
-  const filteredCities = cities;
+  const allCities = [...cities, ...northAmericanCapitals.filter(capital => 
+    !cities.some(city => city.name === capital.name && city.country === capital.country)
+  )];
 
   if (isLoading) {
     return (
@@ -93,51 +178,92 @@ export default function Globe() {
   }
 
   return (
-    <div className="h-screen bg-slate-950 flex flex-col">
-      <div className="p-6 border-b border-slate-800 relative z-10">
-        <h1 className="text-3xl font-bold text-cyan-400 mb-4">Global City Explorer</h1>
-        <Card className="bg-slate-900/95 backdrop-blur border-slate-800 p-4 max-w-2xl relative">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => searchResults.length > 0 && setShowResults(true)}
-              placeholder="Search any city worldwide (e.g., Toronto, Paris, Tokyo)..."
-              className="pl-10 bg-slate-800 border-slate-700 text-slate-200"
-            />
-            {isSearching && (
-              <Loader2 className="absolute right-3 top-3 w-5 h-5 text-cyan-400 animate-spin" />
-            )}
+    <div className="h-screen bg-white dark:bg-slate-950 flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-[1000] bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-[1760px] mx-auto px-6 lg:px-10 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/Landing')}
+                className="rounded-full"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
+                  <GlobeIcon className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                  planetary
+                </span>
+              </div>
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      {/* Search Section */}
+      <div className="relative z-[999] bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 py-6">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="bg-white dark:bg-slate-900 rounded-full shadow-xl shadow-purple-500/10 border border-slate-200 dark:border-slate-800 p-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                  placeholder="Search cities worldwide..."
+                  className="w-full pl-14 pr-6 py-4 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none text-sm font-medium"
+                />
+                {isSearching && (
+                  <Loader2 className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-600 animate-spin" />
+                )}
+              </div>
+              <button className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white p-4 rounded-full shadow-lg shadow-purple-500/30 transition-all hover:scale-105">
+                <Search className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Search Results Dropdown */}
           {showResults && searchResults.length > 0 && (
-            <div className="absolute top-full left-4 right-4 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-96 overflow-y-auto z-[9999]">
-              {searchResults.map((result, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleCitySelect(result)}
-                  className="w-full px-4 py-3 text-left hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-b-0 flex items-start gap-3"
-                >
-                  <MapPin className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="text-slate-200 font-medium">{result.display}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      {result.latitude.toFixed(4)}, {result.longitude.toFixed(4)}
+            <div className="absolute top-full left-0 right-0 mt-2 max-w-4xl mx-auto px-6">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-purple-500/10 max-h-96 overflow-y-auto">
+                {searchResults.map((result, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleCitySelect(result)}
+                    className="w-full px-6 py-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-b-0 flex items-start gap-4 first:rounded-t-3xl last:rounded-b-3xl"
+                  >
+                    <div className="mt-1 p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                      <MapPin className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                  </div>
-                </button>
-              ))}
+                    <div className="flex-1">
+                      <div className="text-slate-900 dark:text-white font-semibold">{result.display}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        {result.latitude.toFixed(4)}, {result.longitude.toFixed(4)}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
           {showResults && searchResults.length === 0 && !isSearching && searchQuery.length >= 2 && (
-            <div className="absolute top-full left-4 right-4 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-4 text-slate-400 text-sm z-[9999]">
-              No cities found for "{searchQuery}"
+            <div className="absolute top-full left-0 right-0 mt-2 max-w-4xl mx-auto px-6">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-purple-500/10 p-6 text-slate-500 dark:text-slate-400 text-sm">
+                No cities found for "{searchQuery}"
+              </div>
             </div>
           )}
-        </Card>
+        </div>
       </div>
 
       <div className="flex-1 relative">
@@ -147,31 +273,72 @@ export default function Globe() {
           style={{ height: '100%', width: '100%' }}
           className="z-0"
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {filteredCities.map(city => (
-            <Marker
-              key={city.id}
-              position={[city.latitude, city.longitude]}
+          {isDark ? (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            />
+          ) : (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          )}
+          <DarkModeHandler />
+          {allCities.map((city, idx) => (
+            <CircleMarker
+              key={city.id || `capital-${idx}`}
+              center={[city.latitude, city.longitude]}
+              radius={hoveredCity === idx ? 8 : 5}
+              fillColor={hoveredCity === idx ? '#a855f7' : '#8b5cf6'}
+              color={hoveredCity === idx ? '#d946ef' : '#a855f7'}
+              weight={hoveredCity === idx ? 3 : 2}
+              opacity={hoveredCity === idx ? 1 : 0.8}
+              fillOpacity={hoveredCity === idx ? 0.9 : 0.7}
+              onMouseEnter={() => {
+                setHoveredCity(idx);
+                setOpenPopup(idx);
+              }}
+              onMouseLeave={() => {
+                setHoveredCity(null);
+                setOpenPopup(null);
+              }}
+              eventHandlers={{
+                click: () => setOpenPopup(idx)
+              }}
             >
-              <Popup>
-                <div className="text-center p-2">
-                  <h3 className="font-bold text-lg mb-1">{city.name}</h3>
-                  <p className="text-sm text-slate-600 mb-2">{city.country}</p>
-                  <p className="text-xs text-slate-500 mb-3">
-                    Pop: {(city.population / 1000000).toFixed(1)}M • {city.climate_zone}
-                  </p>
+              <Popup
+                open={openPopup === idx}
+                onClose={() => setOpenPopup(null)}
+              >
+                <div className="text-center p-4 min-w-64">
+                  <h3 className="font-bold text-lg mb-2 text-slate-900">{city.name}</h3>
+                  <p className="text-sm text-slate-600 mb-3">{city.country}</p>
+                  <div className="bg-slate-100 rounded-lg p-3 mb-4 space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600">Population:</span>
+                      <span className="font-semibold text-slate-900">{(city.population / 1000000).toFixed(1)}M</span>
+                    </div>
+                    {city.climate_zone && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-600">Climate:</span>
+                        <span className="font-semibold text-slate-900 capitalize">{city.climate_zone}</span>
+                      </div>
+                    )}
+                  </div>
                   <button
-                    onClick={() => handleCityClick(city)}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded text-sm font-medium"
+                    onClick={() => {
+                      setOpenPopup(null);
+                      handleCityClick(city);
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-lg shadow-purple-500/30 transition-all hover:scale-105 flex items-center justify-center gap-2"
                   >
+                    <Zap className="w-4 h-4" />
                     Analyze Risks
                   </button>
                 </div>
               </Popup>
-            </Marker>
+            </CircleMarker>
           ))}
         </MapContainer>
       </div>
