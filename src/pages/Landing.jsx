@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Globe, Zap, Layers, Download, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
+import Interactive3DGlobe from '@/components/landing/Interactive3DGlobe';
 
 export default function Landing() {
   const navigate = useNavigate();
