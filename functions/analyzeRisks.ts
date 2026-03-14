@@ -40,14 +40,23 @@ Deno.serve(async (req) => {
 async function fetchNASAPowerData(city) {
   const { latitude, longitude } = city;
   
-  // NASA POWER API - Daily data for past 30 days
+  const formatDate = (d) => d.toISOString().split('T')[0].replace(/-/g, '');
   const endDate = new Date();
+  
+  // Fetch 30-year baseline for EHF calculation
+  const baselineStartDate = new Date();
+  baselineStartDate.setFullYear(baselineStartDate.getFullYear() - 30);
+  
+  const baselineUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDate(baselineStartDate)}&end=${formatDate(endDate)}&format=JSON`;
+  
+  const baselineResponse = await fetch(baselineUrl);
+  const baselineData = await baselineResponse.json();
+  
+  // Fetch recent 30 days for current metrics
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
   
-  const formatDate = (d) => d.toISOString().split('T')[0].replace(/-/g, '');
-  
-  const dailyUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,PRECTOTCORR,WS2M,PS,RH2M&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDate(startDate)}&end=${formatDate(endDate)}&format=JSON`;
+  const dailyUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,PRECTOTCORR,WS2M,PS,RH2M&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDate(startDate)}&end=${formatDate(endDate)}&format=JSON`;
   
   const response = await fetch(dailyUrl);
   const data = await response.json();
@@ -84,6 +93,20 @@ async function fetchNASAPowerData(city) {
     }))
     .filter(d => d.value !== -999);
   
+  // Process baseline data for EHF
+  const baselineParams = baselineData.properties.parameter;
+  const baselineMaxTemps = Object.values(baselineParams.T2M_MAX || {}).filter(v => v !== -999);
+  
+  // Calculate T95 (95th percentile of 30-year max temperatures)
+  const sortedBaseline = [...baselineMaxTemps].sort((a, b) => a - b);
+  const t95Index = Math.floor(sortedBaseline.length * 0.95);
+  const T95 = sortedBaseline[t95Index];
+  
+  // Get recent max temperatures for T3 and T30 calculations
+  const recentMaxTemps = dates
+    .map(date => params.T2M_MAX[date])
+    .filter(v => v !== -999);
+  
   return {
     temperature_30d,
     precipitation_30d,
@@ -99,6 +122,10 @@ async function fetchNASAPowerData(city) {
       temperature: temperature_30d[temperature_30d.length - 1]?.value,
       precipitation: precipitation_30d[precipitation_30d.length - 1]?.value,
       wind: wind_30d[wind_30d.length - 1]?.value
+    },
+    baseline: {
+      T95,
+      recentMaxTemps
     }
   };
 }
@@ -106,25 +133,49 @@ async function fetchNASAPowerData(city) {
 function detectHazards(nasaData, city) {
   const hazards = [];
   
-  // Heatwave detection (Excess Heat Factor)
-  const temps = nasaData.temperature_30d.map(d => d.value);
-  const recentTemps = temps.slice(-7);
-  const avgTemp = recentTemps.reduce((a, b) => a + b, 0) / recentTemps.length;
-  
-  if (avgTemp > 35) {
-    const ehf = (avgTemp - 30) * 2;
-    let severity = 'low';
-    if (ehf > 80) severity = 'extreme';
-    else if (ehf > 20) severity = 'severe';
-    else if (ehf > 5) severity = 'moderate';
+  // Heatwave detection using proper EHF calculation
+  if (nasaData.baseline && nasaData.baseline.recentMaxTemps.length >= 30) {
+    const { T95, recentMaxTemps } = nasaData.baseline;
     
-    hazards.push({
-      type: 'heatwave',
-      severity,
-      score: Math.min(ehf / 10, 10),
-      index: 'EHF',
-      value: ehf.toFixed(1)
-    });
+    // T3: Average of last 3 days max temperature
+    const T3 = recentMaxTemps.slice(-3).reduce((a, b) => a + b, 0) / 3;
+    
+    // T30: Average of last 30 days max temperature
+    const T30 = recentMaxTemps.reduce((a, b) => a + b, 0) / recentMaxTemps.length;
+    
+    // EHI_sig: Significance component
+    const EHI_sig = T3 - T95;
+    
+    // EHI_accl: Acclimatization component
+    const EHI_accl = T3 - T30;
+    
+    // EHF: Excess Heat Factor
+    const EHF = EHI_sig * Math.max(1, EHI_accl);
+    
+    // Detect heatwave if EHF is positive
+    if (EHF > 0) {
+      let severity = 'low';
+      let score = Math.min(EHF / 10, 10);
+      
+      if (EHF > 40) severity = 'extreme';
+      else if (EHF > 20) severity = 'severe';
+      else if (EHF > 5) severity = 'moderate';
+      
+      hazards.push({
+        type: 'heatwave',
+        severity,
+        score,
+        index: 'EHF',
+        value: EHF.toFixed(2),
+        details: {
+          T95: T95.toFixed(1),
+          T3: T3.toFixed(1),
+          T30: T30.toFixed(1),
+          EHI_sig: EHI_sig.toFixed(2),
+          EHI_accl: EHI_accl.toFixed(2)
+        }
+      });
+    }
   }
   
   // Drought detection (SPI approximation)
