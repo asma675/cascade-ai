@@ -27,7 +27,8 @@ export default function City() {
       return await base44.functions.invoke('analyzeRisks', { city: cityData });
     },
     onSuccess: (response) => {
-      setAssessment(response.data);
+      const data = response?.data?.data ?? response?.data;
+      setAssessment(data);
       setIsAnalyzing(false);
       toast.success('Risk analysis complete');
     },
