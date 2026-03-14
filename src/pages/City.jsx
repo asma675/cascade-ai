@@ -5,6 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import CityMap from '@/components/city/CityMap';
 import CascadingGraph from '@/components/city/CascadingGraph';
 import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
+import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -76,8 +77,9 @@ export default function City() {
           <CascadingGraph chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
-        <div>
-          <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
+        <div className="space-y-6">
+          <CurrentConditions environmentalData={assessment.environmental_data} />
+          <EnvironmentalMetrics environmentalData={assessment.environmental_data} />
         </div>
       </div>
     </div>
