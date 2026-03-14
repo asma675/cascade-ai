@@ -76,7 +76,12 @@ export default function City() {
           <CascadingGraph chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
+<<<<<<< Updated upstream
         <div>
+=======
+        <div className="space-y-6">
+          <CurrentConditions environmentalData={assessment.environmental_data} />
+>>>>>>> Stashed changes
           <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
         </div>
       </div>

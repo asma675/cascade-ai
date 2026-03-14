@@ -59,17 +59,17 @@ async function fetchNASAPowerData(city: { latitude: number; longitude: number })
   const { latitude, longitude } = city;
   const endDate = new Date();
 
-  // Fetch 30-year baseline for EHF (T95)
+  // Fetch 30-year baseline for EHF (T95) using daily mean T = (Tmax+Tmin)/2
   const baselineStartDate = new Date();
   baselineStartDate.setFullYear(baselineStartDate.getFullYear() - 30);
-  const baselineUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDateDaily(baselineStartDate)}&end=${formatDateDaily(endDate)}&format=JSON`;
+  const baselineUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDateDaily(baselineStartDate)}&end=${formatDateDaily(endDate)}&format=JSON`;
   const baselineResponse = await fetch(baselineUrl);
   const baselineData = await baselineResponse.json();
 
-  // Fetch recent 30 days for charts and EHF T3/T30
+  // Fetch recent 30 days for charts and EHF T3/T30 (canonical EHF uses daily mean T = (Tmax+Tmin)/2)
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
-  const dailyUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,PRECTOTCORR,WS2M,PS,RH2M&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDateDaily(startDate)}&end=${formatDateDaily(endDate)}&format=JSON`;
+  const dailyUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,T2M_MIN,PRECTOTCORR,WS2M,PS,RH2M&community=RE&longitude=${longitude}&latitude=${latitude}&start=${formatDateDaily(startDate)}&end=${formatDateDaily(endDate)}&format=JSON`;
   const response = await fetch(dailyUrl);
   const data = await response.json();
 
@@ -111,51 +111,88 @@ async function fetchNASAPowerData(city: { latitude: number; longitude: number })
     }))
     .filter(d => d.value !== -999);
   
-  // Process baseline data for EHF
-  const baselineParams = baselineData.properties.parameter;
-  const baselineMaxTemps = Object.values(baselineParams.T2M_MAX || {}).filter(v => v !== -999);
-  
-  // Calculate T95 (95th percentile of 30-year max temperatures)
-  const sortedBaseline = [...baselineMaxTemps].sort((a, b) => a - b);
-  const t95Index = Math.floor(sortedBaseline.length * 0.95);
+  // Process baseline for EHF: daily mean T = (Tmax + Tmin)/2, then T95 = 95th percentile of those
+  const baselineParams = baselineData.properties?.parameter ?? {};
+  const baselineDates = Object.keys(baselineParams.T2M_MAX || {});
+  const baselineDailyMeans = baselineDates
+    .map((date: string) => {
+      const tmax = baselineParams.T2M_MAX?.[date];
+      const tmin = baselineParams.T2M_MIN?.[date];
+      if (tmax == null || tmin == null || tmax === -999 || tmin === -999) return null;
+      return (tmax + tmin) / 2;
+    })
+    .filter((v: number | null): v is number => v != null);
+  const sortedBaseline = [...baselineDailyMeans].sort((a, b) => a - b);
+  const t95Index = Math.min(Math.floor(sortedBaseline.length * 0.95), sortedBaseline.length - 1);
   const T95 = sortedBaseline[t95Index];
-  
-  // Get recent max temperatures for T3 and T30 calculations
+
+  // Recent daily mean temperatures for canonical EHF (T3, T30)
+  const recentDailyMeans = dates
+    .map((date: string) => {
+      const tmax = params.T2M_MAX?.[date];
+      const tmin = params.T2M_MIN?.[date];
+      if (tmax == null || tmin == null || tmax === -999 || tmin === -999) return null;
+      return (tmax + tmin) / 2;
+    })
+    .filter((v: number | null): v is number => v != null);
   const recentMaxTemps = dates
     .map((date: string) => params.T2M_MAX[date])
     .filter((v: number) => v !== -999);
 
-  // Monthly precipitation: compute total mm per month (API gives mm/day mean) and SPI
-  let spi: number | null = null;
-  let currentMonthPrecipMm: number | null = null;
-  let spiDetails: { mean_mm: number; std_mm: number; same_month_count: number } | null = null;
+  // SPI-12: 12-month rolling precipitation total, historical same-ending-month totals, z-score
+  let spi12: number | null = null;
+  let spi12Details: { current_12mo_mm: number; mean_12mo_mm: number; std_12mo_mm: number; n_years: number } | null = null;
   const monthlyParams = monthlyData?.properties?.parameter?.PRECTOTCORR;
   if (monthlyParams && typeof monthlyParams === 'object') {
-    const monthKeys = Object.keys(monthlyParams).filter((k) => /^\d{6}$/.test(k));
-    const currentMonth = endDate.getMonth() + 1;
-    const currentYYYYMM = formatDateMonthly(endDate);
-    const sameMonthTotals: number[] = [];
-    let currentTotal = 0;
+    const monthKeys = Object.keys(monthlyParams)
+      .filter((k) => /^\d{6}$/.test(k))
+      .sort();
+    const monthlyTotalsMm: Record<string, number> = {};
     for (const key of monthKeys) {
       const val = monthlyParams[key];
       if (val == null || val === -999) continue;
       const y = parseInt(key.substring(0, 4), 10);
       const m = parseInt(key.substring(4, 6), 10);
-      const days = daysInMonth(y, m);
-      const totalMm = val * days;
-      if (m === currentMonth) {
-        sameMonthTotals.push(totalMm);
-        if (key === currentYYYYMM) currentTotal = totalMm;
-      }
+      monthlyTotalsMm[key] = val * daysInMonth(y, m);
     }
-    if (sameMonthTotals.length >= 2) {
-      const mean = sameMonthTotals.reduce((a, b) => a + b, 0) / sameMonthTotals.length;
-      const variance = sameMonthTotals.reduce((sum, val) => sum + (val - mean) ** 2, 0) / sameMonthTotals.length;
-      const std = Math.sqrt(variance);
-      if (currentTotal > 0) currentMonthPrecipMm = currentTotal;
-      if (std > 0 && currentMonthPrecipMm != null) {
-        spi = (currentMonthPrecipMm - mean) / std;
-        spiDetails = { mean_mm: mean, std_mm: std, same_month_count: sameMonthTotals.length };
+    if (monthKeys.length >= 12) {
+      const lastKey = monthKeys[monthKeys.length - 1];
+      const endYear = parseInt(lastKey.substring(0, 4), 10);
+      const endMonth = parseInt(lastKey.substring(4, 6), 10);
+      const historical12mo: number[] = [];
+      for (let year = 1981; year <= endYear; year++) {
+        let sum = 0;
+        let hasAll = true;
+        for (let i = 0; i < 12; i++) {
+          let m = endMonth - 11 + i;
+          let y = year;
+          if (m <= 0) {
+            m += 12;
+            y -= 1;
+          }
+          const k = `${y}${String(m).padStart(2, '0')}`;
+          if (monthlyTotalsMm[k] == null) {
+            hasAll = false;
+            break;
+          }
+          sum += monthlyTotalsMm[k];
+        }
+        if (hasAll) historical12mo.push(sum);
+      }
+      const current12mo = historical12mo.length > 0 ? historical12mo[historical12mo.length - 1] : 0;
+      if (historical12mo.length >= 2) {
+        const mean = historical12mo.reduce((a, b) => a + b, 0) / historical12mo.length;
+        const variance = historical12mo.reduce((s, v) => s + (v - mean) ** 2, 0) / historical12mo.length;
+        const std = Math.sqrt(variance);
+        if (std > 0) {
+          spi12 = (current12mo - mean) / std;
+          spi12Details = {
+            current_12mo_mm: current12mo,
+            mean_12mo_mm: mean,
+            std_12mo_mm: std,
+            n_years: historical12mo.length
+          };
+        }
       }
     }
   }
@@ -178,23 +215,24 @@ async function fetchNASAPowerData(city: { latitude: number; longitude: number })
     },
     baseline: {
       T95,
-      recentMaxTemps
+      recentMaxTemps,
+      recentDailyMeans
     },
     indices: (() => {
       let ehf: number | null = null;
       let ehfDetails: { T95: number; T3: number; T30: number; EHI_sig: number; EHI_accl: number } | null = null;
-      if (recentMaxTemps.length >= 30) {
-        const T3 = recentMaxTemps.slice(-3).reduce((a, b) => a + b, 0) / 3;
-        const T30 = recentMaxTemps.reduce((a, b) => a + b, 0) / recentMaxTemps.length;
+      if (recentDailyMeans.length >= 21) {
+        const T3 = recentDailyMeans.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, recentDailyMeans.length);
+        const T30 = recentDailyMeans.reduce((a, b) => a + b, 0) / recentDailyMeans.length;
         const EHI_sig = T3 - T95;
         const EHI_accl = T3 - T30;
         ehf = EHI_sig * Math.max(1, EHI_accl);
         ehfDetails = { T95, T3, T30, EHI_sig, EHI_accl };
       }
       return {
-        spi: spi != null ? spi : null,
-        spi_details: spiDetails,
-        current_month_precip_mm: currentMonthPrecipMm,
+        spi: spi12,
+        spi_details: spi12Details,
+        current_month_precip_mm: spi12Details?.current_12mo_mm ?? null,
         ehf,
         ehf_details: ehfDetails
       };
@@ -285,25 +323,27 @@ function detectHazards(nasaData, city) {
     }
   }
 
-  // Drought detection using SPI from monthly precipitation API (historical same-month)
-  const SPI = indices?.spi ?? null;
-  if (SPI != null && SPI < -1.0) {
+  // Drought detection using SPI-12 (12-month standardized precipitation index)
+  const SPI12 = indices?.spi ?? null;
+  if (SPI12 != null && SPI12 < -1.0) {
     let severity = 'moderate';
-    let score = Math.abs(SPI) * 2;
-    if (SPI < -2.0) severity = 'extreme';
-    else if (SPI < -1.5) severity = 'severe';
-    const spiDetails = (nasaData as { indices?: { spi_details?: { mean_mm: number; std_mm: number }; current_month_precip_mm?: number | null } }).indices;
+    let score = Math.abs(SPI12) * 2;
+    if (SPI12 < -2.0) severity = 'extreme';
+    else if (SPI12 < -1.5) severity = 'severe';
+    const spiDetails = (nasaData as { indices?: { spi_details?: { mean_12mo_mm?: number; std_12mo_mm?: number; current_12mo_mm?: number }; current_month_precip_mm?: number | null } }).indices;
+    const d = spiDetails?.spi_details;
     hazards.push({
       type: 'drought',
       severity,
       score: Math.min(score, 10),
-      index: 'SPI',
-      value: SPI.toFixed(2),
-      details: spiDetails?.spi_details
+      index: 'SPI-12',
+      value: SPI12.toFixed(2),
+      details: d
         ? {
-            mean_precip: spiDetails.spi_details.mean_mm.toFixed(2),
-            recent_total: (spiDetails.current_month_precip_mm ?? 0).toFixed(2),
-            std_dev: spiDetails.spi_details.std_mm.toFixed(2)
+            mean_12mo_mm: d.mean_12mo_mm?.toFixed(2),
+            current_12mo_mm: d.current_12mo_mm?.toFixed(2),
+            std_12mo_mm: d.std_12mo_mm?.toFixed(2),
+            n_years: d.n_years
           }
         : undefined
     });
