@@ -1,15 +1,11 @@
-import React, { useRef, Suspense } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere, useTexture } from '@react-three/drei';
+import { OrbitControls, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
 function RotatingGlobe() {
   const meshRef = useRef();
   const cloudsRef = useRef();
-
-  const earthTexture = useTexture('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-  const earthBump = useTexture('https://unpkg.com/three-globe/example/img/earth-topology.png');
-  const cloudsTexture = useTexture('https://unpkg.com/three-globe/example/img/earth-clouds.png');
 
   useFrame(() => {
     if (meshRef.current) {
@@ -22,21 +18,22 @@ function RotatingGlobe() {
 
   return (
     <group>
-      {/* Earth */}
+      {/* Earth - Blue/Green gradient effect */}
       <Sphere ref={meshRef} args={[2.5, 64, 64]}>
         <meshStandardMaterial
-          map={earthTexture}
-          bumpMap={earthBump}
-          bumpScale={0.05}
+          color="#0ea5e9"
+          metalness={0.3}
+          roughness={0.7}
         />
       </Sphere>
       
-      {/* Clouds */}
-      <Sphere ref={cloudsRef} args={[2.52, 64, 64]}>
+      {/* Cloud layer effect */}
+      <Sphere ref={cloudsRef} args={[2.52, 32, 32]}>
         <meshStandardMaterial
-          map={cloudsTexture}
+          color="#ffffff"
           transparent
-          opacity={0.4}
+          opacity={0.15}
+          roughness={1}
         />
       </Sphere>
 
@@ -53,23 +50,14 @@ function RotatingGlobe() {
   );
 }
 
-function LoadingFallback() {
-  return (
-    <Sphere args={[2.5, 32, 32]}>
-      <meshStandardMaterial color="#0ea5e9" wireframe />
-    </Sphere>
-  );
-}
-
 export default function Hero3DGlobe() {
   return (
     <div className="w-full h-full">
       <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 3, 5]} intensity={1} />
-        <Suspense fallback={<LoadingFallback />}>
-          <RotatingGlobe />
-        </Suspense>
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[5, 3, 5]} intensity={1.2} />
+        <pointLight position={[-5, -3, -5]} intensity={0.4} color="#4fc3f7" />
+        <RotatingGlobe />
         <OrbitControls
           enableZoom={false}
           enablePan={false}
