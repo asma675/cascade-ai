@@ -73,16 +73,29 @@ Provide a detailed pattern analysis identifying key climate trends, anomalies, a
             temperature: 0.3,
         });
 
-        // Agent 2: Watson - Risk Assessment & Cascading Impact Predictions
-        let watsonAnalysis = null;
-        
-        try {
-            const watsonPrompt = `You are a disaster risk assessment expert specializing in cascading climate impacts. Using real environmental data and vulnerability assessments, predict how climate hazards cascade through interconnected systems.
+        // Agent 2: OpenAI GPT-4o - Risk Assessment & Cascading Impact Predictions
+        const riskAssessment = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a disaster risk assessment expert specializing in cascading climate impacts. Using real environmental data and vulnerability assessments, predict how climate hazards cascade through interconnected systems.
 
-Scenario: ${query}
+Focus on:
+- Primary cascading pathways from detected hazards
+- Secondary and tertiary impact chains across infrastructure, environmental, human, and economic systems
+- Probability and severity of each cascade stage
+- Critical thresholds and tipping points
+- Most vulnerable sectors and populations`
+                },
+                {
+                    role: "user",
+                    content: `Assess cascading climate risks for this scenario:
+
+Query: ${query}
 
 City Profile:
-- Location: ${dataContext.city.name} (${dataContext.city.country})
+- Location: ${dataContext.city.name} (${dataContext.city.country || 'N/A'})
 - Population: ${dataContext.population.toLocaleString()}
 - Climate Zone: ${dataContext.climate_zone}
 - Elevation: ${dataContext.city.elevation}m
@@ -97,56 +110,11 @@ Current Environmental Conditions:
 Vulnerability Context:
 ${JSON.stringify(dataContext.vulnerability_factors, null, 2)}
 
-Based on this data, assess:
-1. Primary cascading pathways from detected hazards
-2. Secondary and tertiary impact chains across infrastructure, environmental, human, and economic systems
-3. Probability and severity of each cascade stage
-4. Critical thresholds and tipping points
-5. Most vulnerable sectors and populations
-
-Provide a comprehensive cascading risk assessment with realistic impact predictions.`;
-
-            const watsonResponse = await fetch(`${Deno.env.get("WATSON_URL")}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Basic ${btoa(`apikey:${Deno.env.get("WATSON_API_KEY")}`)}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    input: watsonPrompt
-                }),
-            });
-
-            if (watsonResponse.ok) {
-                const watsonData = await watsonResponse.json();
-                watsonAnalysis = watsonData.output?.generic?.[0]?.text || watsonData.output?.text?.[0] || null;
-            }
-        } catch (error) {
-            console.error('Watson API error:', error);
-        }
-
-        // Fallback to OpenAI if Watson unavailable
-        if (!watsonAnalysis) {
-            const watsonFallback = await openai.chat.completions.create({
-                model: "gpt-4o",
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are a disaster risk assessment expert specializing in cascading climate impacts. Predict realistic cascading pathways through environmental, infrastructure, human, and economic systems."
-                    },
-                    {
-                        role: "user",
-                        content: `Scenario: ${query}
-
-Data: ${JSON.stringify(dataContext, null, 2)}
-
 Provide a comprehensive cascading risk assessment with realistic probability and severity estimates for each cascade stage.`
-                    }
-                ],
-                temperature: 0.4,
-            });
-            watsonAnalysis = watsonFallback.choices[0].message.content;
-        }
+                }
+            ],
+            temperature: 0.4,
+        });
 
         // Agent 3: OpenAI GPT-4o - Synthesis & Actionable Recommendations
         const synthesisResponse = await openai.chat.completions.create({
@@ -170,8 +138,8 @@ Your synthesis should:
 PATTERN ANALYSIS (OpenAI Climate Expert):
 ${openaiAnalysis.choices[0].message.content}
 
-CASCADING RISK ASSESSMENT (Watson/Risk Expert):
-${watsonAnalysis}
+CASCADING RISK ASSESSMENT (OpenAI Risk Expert):
+${riskAssessment.choices[0].message.content}
 
 REAL DATA FOUNDATION:
 - City: ${dataContext.city.name}, Pop: ${dataContext.population.toLocaleString()}
@@ -198,11 +166,10 @@ Provide a unified assessment with:
             },
             agents: {
                 pattern_analysis: openaiAnalysis.choices[0].message.content,
-                risk_assessment: watsonAnalysis,
+                risk_assessment: riskAssessment.choices[0].message.content,
                 synthesis: synthesisResponse.choices[0].message.content
             },
-            final_answer: synthesisResponse.choices[0].message.content,
-            confidence_level: watsonAnalysis ? 'high' : 'medium'
+            final_answer: synthesisResponse.choices[0].message.content
         });
 
     } catch (error) {
