@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ComparisonChart from '@/components/compare/ComparisonChart';
 import ThemeToggle from '@/components/landing/ThemeToggle';
+import Footer from '@/components/Footer';
 import { ArrowLeftRight } from 'lucide-react';
 
 export default function Compare() {
