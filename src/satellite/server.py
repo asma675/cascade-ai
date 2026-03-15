@@ -60,11 +60,38 @@ import os
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 
 import ee
 
 app = Flask(__name__)
+
+# Allow frontend origin (Vite default); set to "*" to allow any origin
+CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "http://localhost:5173")
+
+
+def _cors_response():
+    """Response with CORS headers for preflight (OPTIONS) or manual use."""
+    r = Response(status=204)
+    r.headers["Access-Control-Allow-Origin"] = CORS_ORIGIN
+    r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    r.headers["Access-Control-Max-Age"] = "86400"
+    return r
+
+
+@app.before_request
+def _cors_preflight():
+    if request.method == "OPTIONS":
+        return _cors_response()
+
+
+@app.after_request
+def _cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = CORS_ORIGIN
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
 
 
 # ── GEE initialisation ────────────────────────────────────────────────────────

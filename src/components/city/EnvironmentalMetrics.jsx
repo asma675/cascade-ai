@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Thermometer, Droplets, Wind, Gauge } from 'lucide-react';
+import { Thermometer, Droplets, Wind, Gauge, Satellite } from 'lucide-react';
 
 function IndexBadge({ label, value, unit, sub }) {
   return (
@@ -22,11 +22,16 @@ function daysInMonth(year, month) {
   return new Date(year, month, 0).getDate();
 }
 
+const SATELLITE_URL = import.meta.env.VITE_SATELLITE_INDICES_URL || '';
+
 export default function EnvironmentalMetrics({ environmentalData, city }) {
   const [timeWindow, setTimeWindow] = useState('30d');
   const [clientSpi, setClientSpi] = useState(null);
   const [clientSpiDetails, setClientSpiDetails] = useState(null);
   const [clientCurrentMonthPrecipMm, setClientCurrentMonthPrecipMm] = useState(null);
+  const [satelliteIndices, setSatelliteIndices] = useState(null);
+  const [satelliteLoading, setSatelliteLoading] = useState(false);
+  const [satelliteError, setSatelliteError] = useState(null);
 
   if (!environmentalData) return null;
 
@@ -137,6 +142,38 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [city?.latitude, city?.longitude, indices.spi]);
+
+  useEffect(() => {
+    if (!SATELLITE_URL || !city?.latitude || !city?.longitude) return;
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    setSatelliteLoading(true);
+    setSatelliteError(null);
+    fetch(`${SATELLITE_URL.replace(/\/$/, '')}/indices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: city.latitude,
+        lon: city.longitude,
+        start: startStr,
+        end: endStr,
+        buffer_m: 100
+      })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText || 'Satellite API error');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setSatelliteIndices(data);
+      })
+      .catch((err) => setSatelliteError(err.message))
+      .finally(() => setSatelliteLoading(false));
+  }, [city?.latitude, city?.longitude]);
 
   useEffect(() => {
     console.group('[EnvironmentalMetrics] Index calculations');
@@ -284,6 +321,70 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
           );
         })}
       </div>
+
+      {SATELLITE_URL && (
+        <div className="mt-6 border-t border-slate-700 pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Satellite className="w-5 h-5 text-amber-400" />
+            <h3 className="text-lg font-semibold text-cyan-400">Satellite spectral indices (city center)</h3>
+          </div>
+          {satelliteLoading && (
+            <div className="text-slate-400 text-sm py-4">Loading indices for {city?.name}…</div>
+          )}
+          {satelliteError && (
+            <div className="text-amber-400/90 text-sm py-2 rounded bg-slate-800/80 px-3">{satelliteError}</div>
+          )}
+          {!satelliteLoading && !satelliteError && satelliteIndices && (
+            <div className="space-y-4">
+              <div className="text-xs text-slate-500">
+                Post: {satelliteIndices.post_start} → {satelliteIndices.post_end}
+                {satelliteIndices.baseline_start && ` · Baseline: ${satelliteIndices.baseline_start} → ${satelliteIndices.baseline_end}`}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {[
+                  { k: 'nbr', label: 'NBR' },
+                  { k: 'ndvi', label: 'NDVI' },
+                  { k: 'mndwi', label: 'MNDWI' },
+                  { k: 'bsi', label: 'BSI' },
+                  { k: 'nbr_pre', label: 'NBR (pre)' },
+                  { k: 'ndvi_pre', label: 'NDVI (pre)' },
+                  { k: 'mndwi_pre', label: 'MNDWI (pre)' },
+                  { k: 'bsi_pre', label: 'BSI (pre)' },
+                  { k: 'dnbr', label: 'dNBR' },
+                  { k: 'dndvi', label: 'dNDVI' },
+                  { k: 'dbsi', label: 'dBSI' },
+                  { k: 'dmndwi', label: 'dMNDWI' }
+                ].map(({ k, label }) => {
+                  const v = satelliteIndices[k];
+                  const num = typeof v === 'number' && !Number.isNaN(v);
+                  return (
+                    <div key={k} className="rounded-lg bg-slate-800/80 border border-slate-700 px-3 py-2">
+                      <div className="text-slate-400 text-xs font-medium">{label}</div>
+                      <div className="text-cyan-300 font-mono text-sm mt-0.5">
+                        {num ? v.toFixed(3) : v ?? '—'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-700">
+                {[
+                  { k: 'land_class', label: 'Land class' },
+                  { k: 'nbr_label', label: 'NBR label' },
+                  { k: 'mndwi_label', label: 'MNDWI label' },
+                  { k: 'dndvi_label', label: 'dNDVI label' },
+                  { k: 'dbsi_label', label: 'dBSI label' }
+                ].map(({ k, label }) => (
+                  <div key={k} className="rounded-lg bg-slate-800/80 border border-slate-700 px-3 py-2">
+                    <div className="text-slate-400 text-xs font-medium">{label}</div>
+                    <div className="text-slate-200 text-sm mt-0.5">{satelliteIndices[k] ?? '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
