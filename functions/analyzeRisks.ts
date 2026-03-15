@@ -36,9 +36,38 @@ Deno.serve(async (req) => {
     
     // Detect hazards (includes heatwave, drought, and satellite wildfire/flood when hazard_state present)
     const hazards = detectHazards(mergedData, city);
-    
-    // Generate cascading risk chains using AI
-    const cascadingChains = await generateCascadingChains(base44, city, hazards, nasaData);
+
+    // Generate cascading risk chains: use RAG server when configured, else fallback to LLM
+    const RAG_CHAINS_URL = Deno.env.get("RAG_CHAINS_URL")?.replace(/\/$/, "");
+    let cascadingChains: unknown[];
+    if (RAG_CHAINS_URL) {
+      try {
+        const ragRes = await fetch(`${RAG_CHAINS_URL}/chains`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: "Generate cascading impact chains for the detected hazards and location indices. Output format: json.",
+            city: { name: city.name, country: city.country, latitude: city.latitude, longitude: city.longitude, population: city.population, climate_zone: city.climate_zone, elevation: city.elevation },
+            assessment: { environmental_data: mergedData, hazards_detected: hazards },
+            format: "json",
+          }),
+        });
+        if (ragRes.ok) {
+          const ragData = (await ragRes.json()) as { chains?: unknown[] };
+          if (Array.isArray(ragData.chains) && ragData.chains.length > 0) {
+            cascadingChains = ragData.chains;
+          } else {
+            cascadingChains = await generateCascadingChains(base44, city, hazards, nasaData);
+          }
+        } else {
+          cascadingChains = await generateCascadingChains(base44, city, hazards, nasaData);
+        }
+      } catch {
+        cascadingChains = await generateCascadingChains(base44, city, hazards, nasaData);
+      }
+    } else {
+      cascadingChains = await generateCascadingChains(base44, city, hazards, nasaData);
+    }
     
     // Predict impacts
     const predictedImpacts = predictImpacts(hazards, city);

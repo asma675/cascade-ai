@@ -16,11 +16,17 @@ import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+const RAG_CHAINS_URL = import.meta.env.VITE_RAG_CHAINS_URL?.replace(/\/$/, '');
+
 export default function City() {
   const { cityName } = useParams();
   const navigate = useNavigate();
   const [assessment, setAssessment] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [ragChains, setRagChains] = useState(null);
+  const [ragSources, setRagSources] = useState(null);
+  const [ragChainsLoading, setRagChainsLoading] = useState(false);
+  const [ragChainsError, setRagChainsError] = useState(null);
 
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
@@ -34,7 +40,60 @@ export default function City() {
 
   useEffect(() => {
     setAssessment(null);
+    setRagChains(null);
+    setRagSources(null);
+    setRagChainsError(null);
   }, [cityName]);
+
+  // When we have assessment and RAG server URL, fetch chains from localhost (evidence-based, no generic AI)
+  useEffect(() => {
+    if (!assessment || !city || !RAG_CHAINS_URL) {
+      if (!RAG_CHAINS_URL && assessment) setRagChains(null);
+      return;
+    }
+    setRagChainsLoading(true);
+    setRagChainsError(null);
+    fetch(`${RAG_CHAINS_URL}/chains`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: 'Generate cascading impact chains for the detected hazards and location indices. Output format: json.',
+        city: {
+          name: city.name,
+          country: city.country,
+          latitude: city.latitude,
+          longitude: city.longitude,
+          population: city.population,
+          climate_zone: city.climate_zone,
+          elevation: city.elevation,
+        },
+        assessment: {
+          environmental_data: assessment.environmental_data,
+          hazards_detected: assessment.hazards_detected,
+        },
+        format: 'json',
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText || 'RAG chains request failed');
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data.chains) && data.chains.length > 0) {
+          setRagChains(data.chains);
+          setRagSources(Array.isArray(data.sources) ? data.sources : null);
+        } else {
+          setRagChains(null);
+          setRagSources(null);
+        }
+      })
+      .catch((err) => {
+        setRagChainsError(err.message);
+        setRagChains(null);
+        setRagSources(null);
+      })
+      .finally(() => setRagChainsLoading(false));
+  }, [assessment, city, RAG_CHAINS_URL]);
 
   const analyzeRiskMutation = useMutation({
     mutationFn: async (cityData) => {
@@ -261,7 +320,14 @@ export default function City() {
             }}
             isAnalyzing={isAnalyzing}
           />
-          <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
+          <CascadingFlowchart
+            chains={ragChains ?? assessment.cascading_chains}
+            hazards={assessment.hazards_detected}
+            sources={ragChains ? ragSources : null}
+            isLoadingChains={ragChainsLoading}
+            chainsSource={ragChains ? 'rag' : 'backend'}
+            ragError={ragChainsError}
+          />
         </div>
         
         <div className="space-y-6">
