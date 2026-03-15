@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CityMap from '@/components/city/CityMap';
 import CascadingFlowchart from '@/components/city/CascadingFlowchart';
 import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
