@@ -84,29 +84,31 @@ Always base your answers on the real data provided. If asked about something not
       content: message
     });
 
-    // Use multi-agent system for enhanced climate analysis
-    const multiAgentResponse = await base44.functions.invoke('multiAgentAnalysis', {
-      query: message,
-      context: {
-        city: contextData.city,
-        hazards: contextData.assessment?.hazards || [],
-        current_conditions: contextData.assessment?.environmental_data?.current || {},
-        environmental_data: contextData.assessment?.environmental_data || {},
-        conversation_history: recentHistory
-      }
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 500
+      })
     });
 
-    const aiResponse = multiAgentResponse.data?.final_answer || 
-                      multiAgentResponse.data?.agents?.synthesis ||
-                      'Unable to generate response';
+    if (!openaiResponse.ok) {
+      const error = await openaiResponse.text();
+      console.error('OpenAI API error:', error);
+      throw new Error('Failed to get AI response');
+    }
 
-    return Response.json({ 
-      response: aiResponse,
-      insights: {
-        pattern_analysis: multiAgentResponse.data?.agents?.pattern_analysis,
-        risk_assessment: multiAgentResponse.data?.agents?.risk_assessment
-      }
-    });
+    const data = await openaiResponse.json();
+    const aiResponse = data.choices[0].message.content;
+
+    return Response.json({ response: aiResponse });
 
   } catch (error) {
     console.error('Chat error:', error);

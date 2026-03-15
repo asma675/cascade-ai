@@ -407,36 +407,14 @@ async function generateCascadingChains(base44, city, hazards, nasaData) {
   ];
   
   for (const hazard of hazardsToAnalyze) {
-    // Use multi-agent analysis for enhanced predictions
-    const multiAgentResponse = await base44.functions.invoke('multiAgentAnalysis', {
-      query: `Generate a cascading risk chain for a ${hazard.type} event with ${hazard.severity} severity (score: ${hazard.score}/10) in ${city.name}. Create a realistic 5-node cascading chain showing how this hazard cascades through systems (hazard→environmental→infrastructure→human→economic).`,
-      context: {
-        city: {
-          name: city.name,
-          population: city.population,
-          elevation: city.elevation,
-          climate_zone: city.climate_zone
-        },
-        hazard: hazard,
-        current_conditions: {
-          temperature: nasaData.current.temperature,
-          wind: nasaData.current.wind,
-          precipitation: nasaData.current.precipitation
-        },
-        environmental_data: {
-          temperature_trend: nasaData.temperature_30d?.slice(-7),
-          precipitation_trend: nasaData.precipitation_30d?.slice(-7)
-        }
-      }
-    });
+    const prompt = `You are a climate risk analyst. Given a ${hazard.type} event with ${hazard.severity} severity (score: ${hazard.score}/10) in ${city.name} (population: ${city.population}, elevation: ${city.elevation}m), generate a cascading risk chain.
 
-    const aiAnalysis = multiAgentResponse.data?.final_answer || '';
+Current conditions:
+- Temperature: ${nasaData.current.temperature}°C
+- Wind: ${nasaData.current.wind} m/s
+- Precipitation: ${nasaData.current.precipitation} mm
 
-    // Extract structured chain from AI analysis
-    const prompt = `Based on this multi-agent AI analysis:
-${aiAnalysis}
-
-Generate a JSON object with this exact structure:
+Generate a JSON object with this structure:
 {
   "chain_id": "unique_id",
   "probability": 0.0-1.0,
@@ -450,7 +428,9 @@ Generate a JSON object with this exact structure:
       "data": "supporting data point"
     }
   ]
-}`;
+}
+
+Create a realistic 5-node cascading chain showing how this hazard cascades through systems.`;
 
     const response = await base44.integrations.Core.InvokeLLM({
       prompt,
