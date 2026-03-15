@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import Interactive3DGlobe from '@/components/landing/Interactive3DGlobe';
 import StarryBackground from '@/components/landing/StarryBackground';
+import Footer from '@/components/Footer';
 
 export default function Landing() {
   const navigate = useNavigate();
