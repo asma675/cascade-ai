@@ -106,19 +106,14 @@ Based on this data, assess:
 
 Provide a comprehensive cascading risk assessment with realistic impact predictions.`;
 
-            const watsonResponse = await fetch(`${Deno.env.get("WATSON_URL")}/message`, {
+            const watsonResponse = await fetch(`${Deno.env.get("WATSON_URL")}`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${Deno.env.get("WATSON_API_KEY")}`,
+                    'Authorization': `Basic ${btoa(`apikey:${Deno.env.get("WATSON_API_KEY")}`)}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    input: { text: watsonPrompt },
-                    context: {
-                        metadata: {
-                            deployment: 'production'
-                        }
-                    }
+                    input: watsonPrompt
                 }),
             });
 
