@@ -23,13 +23,23 @@ function MapClickHandler({ onMapClick }) {
   return null;
 }
 
-export default function CityMap({ city, assessment }) {
-  const [radius, setRadius] = useState(500); // Default 500m
-  const [shape, setShape] = useState('circle'); // 'circle' or 'square'
-  const [selectedPoint, setSelectedPoint] = useState(null);
+export default function CityMap({
+  city,
+  assessment,
+  selectionRadiusM,
+  onSelectionRadiusChange,
+  selectionCenter,
+  onSelectionCenterChange,
+  onRunWithSelection,
+  isAnalyzing,
+}) {
+  const [shape, setShape] = useState('circle');
+  const radius = selectionRadiusM ?? 500;
+  const setRadius = onSelectionRadiusChange ?? (() => {});
+  const selectedPoint = selectionCenter ?? (city ? [city.latitude, city.longitude] : null);
 
   const handleMapClick = (latlng) => {
-    setSelectedPoint([latlng.lat, latlng.lng]);
+    onSelectionCenterChange?.([latlng.lat, latlng.lng]);
   };
 
   // Calculate square bounds for Rectangle
@@ -97,8 +107,23 @@ export default function CityMap({ city, assessment }) {
         </div>
 
         <p className="text-xs text-slate-600 dark:text-slate-400">
-          Click anywhere on the map to select a specific area within {city.name}
+          Click anywhere on the map to select a specific area within {city.name}. Radius: 50 m – 5 km.
         </p>
+        {onRunWithSelection && (
+          <button
+            type="button"
+            onClick={onRunWithSelection}
+            disabled={isAnalyzing}
+            className="mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isAnalyzing ? 'Analyzing…' : 'Update analysis for this area'}
+          </button>
+        )}
+        {assessment?.environmental_data?.indices?.ehf_selection_radius_km != null && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Current analysis: {(assessment.environmental_data.indices.ehf_selection_radius_km * 1000).toFixed(0)} m radius
+          </p>
+        )}
       </div>
 
       <div className="relative rounded-lg h-96 overflow-hidden border border-slate-200 dark:border-slate-700">

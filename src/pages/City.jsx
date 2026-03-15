@@ -29,13 +29,22 @@ export default function City() {
 
   const city = cities.find(c => c.name === decodeURIComponent(cityName));
 
+  const [selectionRadiusM, setSelectionRadiusM] = useState(500);
+  const [selectionCenter, setSelectionCenter] = useState(null);
+
+  useEffect(() => {
+    setAssessment(null);
+  }, [cityName]);
+
   const analyzeRiskMutation = useMutation({
     mutationFn: async (cityData) => {
       return await base44.functions.invoke('analyzeRisks', { city: cityData });
     },
     onSuccess: (response) => {
-      const data = response?.data?.data ?? response?.data;
-      setAssessment(data);
+      const data = response?.data?.data ?? response?.data ?? response?.result ?? response;
+      if (data && typeof data === 'object') {
+        setAssessment(data);
+      }
       setIsAnalyzing(false);
       toast.success('Risk analysis complete');
     },
@@ -155,12 +164,24 @@ export default function City() {
     }
   };
 
+  const runAnalysisWithSelection = (cityData, radiusM = selectionRadiusM, center = selectionCenter) => {
+    const radiusKm = radiusM / 1000;
+    const lat = center?.[0] ?? cityData?.latitude;
+    const lon = center?.[1] ?? cityData?.longitude;
+    analyzeRiskMutation.mutate({
+      ...cityData,
+      selection_radius_km: radiusKm,
+      selection_center_lat: lat,
+      selection_center_lon: lon,
+    });
+  };
+
   useEffect(() => {
-    if (city && !assessment && !isAnalyzing) {
-      setIsAnalyzing(true);
-      analyzeRiskMutation.mutate(city);
-    }
-  }, [city]);
+    if (!city || city.latitude == null || city.longitude == null) return;
+    if (assessment != null || isAnalyzing) return;
+    setIsAnalyzing(true);
+    runAnalysisWithSelection(city, selectionRadiusM, selectionCenter);
+  }, [city?.latitude, city?.longitude]);
 
   if (!city) {
     return (
@@ -227,13 +248,35 @@ export default function City() {
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
         <div className="xl:col-span-2 space-y-6">
-          <CityMap city={city} assessment={assessment} />
+          <CityMap
+            city={city}
+            assessment={assessment}
+            selectionRadiusM={selectionRadiusM}
+            onSelectionRadiusChange={setSelectionRadiusM}
+            selectionCenter={selectionCenter}
+            onSelectionCenterChange={setSelectionCenter}
+            onRunWithSelection={() => {
+              setIsAnalyzing(true);
+              runAnalysisWithSelection(city, selectionRadiusM, selectionCenter);
+            }}
+            isAnalyzing={isAnalyzing}
+          />
           <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
         </div>
         
         <div className="space-y-6">
           <CurrentConditions environmentalData={assessment.environmental_data} />
-          <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
+          <EnvironmentalMetrics
+            environmentalData={assessment.environmental_data ?? {}}
+            city={city}
+            selectionRadiusM={selectionRadiusM}
+            selectionCenter={selectionCenter}
+            onRecalculate={() => {
+              setIsAnalyzing(true);
+              runAnalysisWithSelection(city, selectionRadiusM, selectionCenter);
+            }}
+            isAnalyzing={isAnalyzing}
+          />
         </div>
       </div>
 

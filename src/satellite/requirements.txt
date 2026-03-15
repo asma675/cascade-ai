@@ -1,0 +1,4 @@
+# Satellite hazard indices server (Google Earth Engine)
+flask>=3.0.0
+earthengine-api>=0.1.400
+python-dateutil>=2.8.0
