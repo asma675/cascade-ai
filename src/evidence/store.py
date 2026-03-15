@@ -136,10 +136,10 @@ def load_seed_data() -> int:
         return 0
     with open(config.SEED_FILE, "r", encoding="utf-8") as f:
         seed = json.load(f)
-    existing_dois = {e.get("doi", "").lower() for e in list_evidence()}
+    existing_dois = {(e.get("doi") or "").lower() for e in list_evidence()}
     count = 0
     for entry in seed:
-        doi = entry.get("doi", "").lower()
+        doi = (entry.get("doi") or "").lower()
         if doi and doi in existing_dois:
             continue
         entry["id"] = entry.get("id") or str(uuid.uuid4())
