@@ -21,10 +21,19 @@ export default function Landing() {
                 </svg>
               </div>
               <span className="text-xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                planetary
+                cascade
               </span>
             </div>
             <div className="flex items-center gap-6">
+              <button onClick={() => navigate('/Landing')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Home
+              </button>
+              <button onClick={() => navigate('/Globe')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Globe
+              </button>
+              <button onClick={() => navigate('/Compare')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Compare
+              </button>
               <ThemeToggle />
               <Button
                 onClick={() => navigate('/Globe')}
@@ -170,11 +179,14 @@ export default function Landing() {
                 </svg>
               </div>
               <span className="text-xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                planetary
+                cascade
               </span>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               AI-powered climate risk intelligence platform
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-3">
+              © Asma Ahmed, Haris Kamel, Ishav Sohal, Hayagrive Srikanth 2026
             </p>
           </div>
         </div>
