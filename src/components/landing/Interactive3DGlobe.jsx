@@ -34,34 +34,17 @@ export default function Interactive3DGlobe() {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Create globe
+    // Create globe with Earth texture
     const geometry = new THREE.SphereGeometry(1, 64, 64);
     
-    // Create canvas texture for globe
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
+    // Load Earth texture
+    const textureLoader = new THREE.TextureLoader();
+    const earthTexture = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
     
-    // Blue ocean
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Landmasses
-    ctx.fillStyle = '#1e293b';
-    // Simple landmass patterns
-    const landPatterns = [
-      { x: 400, y: 300, w: 250, h: 150 }, // North America
-      { x: 1200, y: 280, w: 280, h: 200 }, // Europe/Africa
-      { x: 1600, y: 350, w: 200, h: 180 }, // Asia
-    ];
-    landPatterns.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
-    
-    const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.MeshPhongMaterial({
-      map: texture,
-      emissive: 0x2a3f6f,
-      shininess: 5
+      map: earthTexture,
+      shininess: 15,
+      specular: new THREE.Color(0x333333)
     });
 
     const globe = new THREE.Mesh(geometry, material);
@@ -69,22 +52,46 @@ export default function Interactive3DGlobe() {
     globeRef.current = globe;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0xa78bfa, 1);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 3, 5);
+    scene.add(directionalLight);
 
-    // Glow effect
-    const glowGeometry = new THREE.SphereGeometry(1.05, 64, 64);
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8b5cf6,
-      transparent: true,
-      opacity: 0.1
+    const secondLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    secondLight.position.set(-5, -3, -5);
+    scene.add(secondLight);
+
+    // Atmosphere glow
+    const glowGeometry = new THREE.SphereGeometry(1.08, 64, 64);
+    const glowMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        c: { value: 0.4 },
+        p: { value: 3.5 }
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float c;
+        uniform float p;
+        varying vec3 vNormal;
+        void main() {
+          float intensity = pow(c - dot(vNormal, vec3(0.0, 0.0, 1.0)), p);
+          gl_FragColor = vec4(0.5, 0.7, 1.0, 1.0) * intensity;
+        }
+      `,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      transparent: true
     });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-    globe.add(glow);
+    const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+    scene.add(glowMesh);
 
     // Mouse move listener
     const onMouseMove = (event) => {
@@ -121,7 +128,11 @@ export default function Interactive3DGlobe() {
       if (globe) {
         globe.rotation.x += (targetRotationX.current - globe.rotation.x) * 0.05;
         globe.rotation.y += (targetRotationY.current - globe.rotation.y) * 0.05;
-        globe.rotation.z += 0.0001; // Slow continuous rotation
+        globe.rotation.y += 0.003; // Continuous rotation
+      }
+      
+      if (glowMesh) {
+        glowMesh.rotation.y += 0.003;
       }
 
       renderer.render(scene, camera);
