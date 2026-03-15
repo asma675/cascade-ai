@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Thermometer, Droplets, Wind, Gauge } from 'lucide-react';
+import { Thermometer, Droplets, Wind } from 'lucide-react';
 
 function IndexBadge({ label, value, unit, sub }) {
   return (
@@ -235,14 +235,6 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
       color: '#06b6d4',
       data: environmentalData.wind_30d,
       unit: 'm/s'
-    },
-    {
-      id: 'pressure',
-      label: 'Air Pressure',
-      icon: Gauge,
-      color: '#8b5cf6',
-      data: environmentalData.pressure_30d,
-      unit: 'hPa'
     }
   ];
 

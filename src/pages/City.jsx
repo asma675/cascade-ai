@@ -9,8 +9,11 @@ import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
 import AIChatbot from '@/components/city/AIChatbot';
 import ThemeToggle from '@/components/landing/ThemeToggle';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function City() {
   const { cityName } = useParams();
@@ -40,6 +43,116 @@ export default function City() {
       toast.error('Analysis failed');
     }
   });
+
+  const exportToPDF = async () => {
+    try {
+      toast.loading('Generating PDF report...');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Title
+      pdf.setFontSize(20);
+      pdf.setTextColor(128, 0, 128);
+      pdf.text(`${city.name} Risk Assessment Report`, 20, yPosition);
+      yPosition += 10;
+
+      // Date
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, 20, yPosition);
+      yPosition += 10;
+
+      // City Info
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Location: ${city.name}, ${city.country}`, 20, yPosition);
+      yPosition += 6;
+      pdf.text(`Coordinates: ${city.latitude.toFixed(4)}, ${city.longitude.toFixed(4)}`, 20, yPosition);
+      yPosition += 6;
+      if (city.population) {
+        pdf.text(`Population: ${city.population.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      yPosition += 5;
+
+      // Hazards Detected
+      pdf.setFontSize(14);
+      pdf.setTextColor(128, 0, 128);
+      pdf.text('Detected Hazards', 20, yPosition);
+      yPosition += 8;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      assessment.hazards_detected.forEach((hazard) => {
+        if (yPosition > pageHeight - 30) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.text(`• ${hazard.type.replace('_', ' ').toUpperCase()}: ${hazard.severity} (Score: ${hazard.score}/10)`, 25, yPosition);
+        yPosition += 6;
+      });
+      yPosition += 5;
+
+      // Environmental Data
+      if (assessment.environmental_data?.current) {
+        pdf.setFontSize(14);
+        pdf.setTextColor(128, 0, 128);
+        pdf.text('Current Conditions', 20, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        const current = assessment.environmental_data.current;
+        if (current.temp_c) {
+          pdf.text(`Temperature: ${current.temp_c}°C`, 25, yPosition);
+          yPosition += 6;
+        }
+        if (current.humidity) {
+          pdf.text(`Humidity: ${current.humidity}%`, 25, yPosition);
+          yPosition += 6;
+        }
+        if (current.wind_kph) {
+          pdf.text(`Wind: ${current.wind_kph} km/h`, 25, yPosition);
+          yPosition += 6;
+        }
+        yPosition += 5;
+      }
+
+      // Predicted Impacts
+      if (assessment.predicted_impacts && Object.keys(assessment.predicted_impacts).length > 0) {
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.setFontSize(14);
+        pdf.setTextColor(128, 0, 128);
+        pdf.text('Predicted Impacts', 20, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        Object.entries(assessment.predicted_impacts).forEach(([key, value]) => {
+          if (yPosition > pageHeight - 20) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+          const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          pdf.text(`${formattedKey}: ${value}`, 25, yPosition);
+          yPosition += 6;
+        });
+      }
+
+      toast.dismiss();
+      pdf.save(`${city.name}_Risk_Assessment.pdf`);
+      toast.success('PDF exported successfully');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to generate PDF');
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     if (city && !assessment && !isAnalyzing) {
@@ -95,6 +208,15 @@ export default function City() {
               <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Compare
               </button>
+              <Button
+                onClick={exportToPDF}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export PDF
+              </Button>
               <ThemeToggle />
             </div>
           </div>
