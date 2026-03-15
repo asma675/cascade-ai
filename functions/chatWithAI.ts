@@ -88,9 +88,10 @@ Always base your answers on the real data provided. If asked about something not
     const multiAgentResponse = await base44.functions.invoke('multiAgentAnalysis', {
       query: message,
       context: {
-        city: cityName,
-        environmental_data: environmentalData,
-        risk_assessment: riskAssessment,
+        city: contextData.city,
+        hazards: contextData.assessment?.hazards || [],
+        current_conditions: contextData.assessment?.environmental_data?.current || {},
+        environmental_data: contextData.assessment?.environmental_data || {},
         conversation_history: recentHistory
       }
     });

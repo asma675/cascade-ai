@@ -1,9 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
-import OpenAI from 'npm:openai';
-
-const openai = new OpenAI({
-    apiKey: Deno.env.get("OPENAI_API_KEY"),
-});
 
 Deno.serve(async (req) => {
     try {
@@ -37,24 +32,17 @@ Deno.serve(async (req) => {
             climate_zone: context.city?.climate_zone || 'unknown'
         };
 
-        // Agent 1: OpenAI GPT-4o - Pattern Recognition & Historical Analysis
-        const openaiAnalysis = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are an expert climate pattern analyst with access to NASA satellite data, historical climate records, and real-time environmental metrics. Analyze patterns, correlations, and anomalies in the data to identify climate trends and their implications.
+        // Agent 1: Pattern Recognition & Historical Analysis
+        const patternAnalysisPrompt = `You are an expert climate pattern analyst with access to NASA satellite data, historical climate records, and real-time environmental metrics. Analyze patterns, correlations, and anomalies in the data to identify climate trends and their implications.
 
 Focus on:
 - Statistical analysis of temperature, precipitation, wind patterns
 - Climate index interpretation (EHF for heatwaves, SPI-12 for drought)
 - Historical trend deviations and anomalies
 - Spatial and temporal correlation patterns
-- Early warning indicators from the data`
-                },
-                {
-                    role: "user",
-                    content: `Analyze climate patterns for this scenario:
+- Early warning indicators from the data
+
+Analyze climate patterns for this scenario:
 
 Query: ${query}
 
@@ -67,30 +55,24 @@ Data Available:
 - Precipitation Trend (7-day): ${JSON.stringify(dataContext.environmental.precipitation_trends)}
 - Vulnerability Factors: ${JSON.stringify(dataContext.vulnerability_factors)}
 
-Provide a detailed pattern analysis identifying key climate trends, anomalies, and their significance.`
-                }
-            ],
-            temperature: 0.3,
+Provide a detailed pattern analysis identifying key climate trends, anomalies, and their significance.`;
+
+        const patternAnalysis = await base44.integrations.Core.InvokeLLM({
+            prompt: patternAnalysisPrompt,
+            model: 'gpt_5'
         });
 
-        // Agent 2: OpenAI GPT-4o - Risk Assessment & Cascading Impact Predictions
-        const riskAssessment = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a disaster risk assessment expert specializing in cascading climate impacts. Using real environmental data and vulnerability assessments, predict how climate hazards cascade through interconnected systems.
+        // Agent 2: Risk Assessment & Cascading Impact Predictions
+        const riskAssessmentPrompt = `You are a disaster risk assessment expert specializing in cascading climate impacts. Using real environmental data and vulnerability assessments, predict how climate hazards cascade through interconnected systems.
 
 Focus on:
 - Primary cascading pathways from detected hazards
 - Secondary and tertiary impact chains across infrastructure, environmental, human, and economic systems
 - Probability and severity of each cascade stage
 - Critical thresholds and tipping points
-- Most vulnerable sectors and populations`
-                },
-                {
-                    role: "user",
-                    content: `Assess cascading climate risks for this scenario:
+- Most vulnerable sectors and populations
+
+Assess cascading climate risks for this scenario:
 
 Query: ${query}
 
@@ -110,36 +92,30 @@ Current Environmental Conditions:
 Vulnerability Context:
 ${JSON.stringify(dataContext.vulnerability_factors, null, 2)}
 
-Provide a comprehensive cascading risk assessment with realistic probability and severity estimates for each cascade stage.`
-                }
-            ],
-            temperature: 0.4,
+Provide a comprehensive cascading risk assessment with realistic probability and severity estimates for each cascade stage.`;
+
+        const riskAssessment = await base44.integrations.Core.InvokeLLM({
+            prompt: riskAssessmentPrompt,
+            model: 'gpt_5'
         });
 
-        // Agent 3: OpenAI GPT-4o - Synthesis & Actionable Recommendations
-        const synthesisResponse = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a senior climate risk advisor synthesizing insights from multiple expert AI systems. Combine pattern analysis and risk assessment to provide clear, actionable recommendations.
+        // Agent 3: Synthesis & Actionable Recommendations
+        const synthesisPrompt = `You are a senior climate risk advisor synthesizing insights from multiple expert AI systems. Combine pattern analysis and risk assessment to provide clear, actionable recommendations.
 
 Your synthesis should:
 - Integrate findings from both analytical perspectives
 - Highlight critical cascading pathways with highest confidence
 - Identify data-driven tipping points and thresholds
 - Provide specific, prioritized recommendations
-- Quantify uncertainty where data is limited`
-                },
-                {
-                    role: "user",
-                    content: `Synthesize these expert analyses for: ${query}
+- Quantify uncertainty where data is limited
 
-PATTERN ANALYSIS (OpenAI Climate Expert):
-${openaiAnalysis.choices[0].message.content}
+Synthesize these expert analyses for: ${query}
 
-CASCADING RISK ASSESSMENT (OpenAI Risk Expert):
-${riskAssessment.choices[0].message.content}
+PATTERN ANALYSIS (Climate Expert):
+${patternAnalysis}
+
+CASCADING RISK ASSESSMENT (Risk Expert):
+${riskAssessment}
 
 REAL DATA FOUNDATION:
 - City: ${dataContext.city.name}, Pop: ${dataContext.population.toLocaleString()}
@@ -150,10 +126,11 @@ Provide a unified assessment with:
 1. Most probable cascading event chain (with confidence levels)
 2. Critical impact predictions based on real data
 3. Key vulnerability points
-4. Prioritized recommendations`
-                }
-            ],
-            temperature: 0.5,
+4. Prioritized recommendations`;
+
+        const synthesis = await base44.integrations.Core.InvokeLLM({
+            prompt: synthesisPrompt,
+            model: 'gpt_5'
         });
 
         return Response.json({
@@ -165,11 +142,11 @@ Provide a unified assessment with:
                 population_data: dataContext.population > 0
             },
             agents: {
-                pattern_analysis: openaiAnalysis.choices[0].message.content,
-                risk_assessment: riskAssessment.choices[0].message.content,
-                synthesis: synthesisResponse.choices[0].message.content
+                pattern_analysis: patternAnalysis,
+                risk_assessment: riskAssessment,
+                synthesis: synthesis
             },
-            final_answer: synthesisResponse.choices[0].message.content
+            final_answer: synthesis
         });
 
     } catch (error) {
