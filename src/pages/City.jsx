@@ -8,9 +8,11 @@ import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
 import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
 import AIChatbot from '@/components/city/AIChatbot';
+import HistoricalTrendsChart from '@/components/city/HistoricalTrendsChart';
 import ThemeToggle from '@/components/landing/ThemeToggle';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 export default function City() {
   const { cityName } = useParams();
@@ -18,12 +20,59 @@ export default function City() {
   const [assessment, setAssessment] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
     queryFn: () => base44.entities.City.list(),
   });
 
   const city = cities.find(c => c.name === decodeURIComponent(cityName));
+
+  const { data: favoriteStatus } = useQuery({
+    queryKey: ['favorite-status', user?.email, city?.id],
+    queryFn: async () => {
+      const favorites = await base44.entities.FavoriteCity.filter({ 
+        user_email: user.email, 
+        city_id: city.id 
+      });
+      return favorites.length > 0 ? favorites[0] : null;
+    },
+    enabled: !!user?.email && !!city?.id,
+  });
+
+  const queryClient = useQueryClient();
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (favoriteStatus) {
+        await base44.entities.FavoriteCity.delete(favoriteStatus.id);
+      } else {
+        await base44.entities.FavoriteCity.create({
+          user_email: user.email,
+          city_id: city.id,
+          city_name: city.name,
+          last_viewed: new Date().toISOString()
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorite-status'] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      toast.success(favoriteStatus ? 'Removed from favorites' : 'Added to favorites');
+    },
+  });
+
+  useEffect(() => {
+    if (user?.email && city?.id && favoriteStatus) {
+      base44.entities.FavoriteCity.update(favoriteStatus.id, {
+        last_viewed: new Date().toISOString()
+      });
+    }
+  }, [city?.id]);
 
   const analyzeRiskMutation = useMutation({
     mutationFn: async (cityData) => {
@@ -95,6 +144,19 @@ export default function City() {
               <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Compare
               </button>
+              <button onClick={() => navigate('/Dashboard')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Dashboard
+              </button>
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleFavoriteMutation.mutate()}
+                  className="gap-2"
+                >
+                  <Star className={`w-4 h-4 ${favoriteStatus ? 'fill-yellow-500 text-yellow-500' : 'text-slate-600 dark:text-slate-400'}`} />
+                </Button>
+              )}
               <ThemeToggle />
             </div>
           </div>
@@ -106,6 +168,7 @@ export default function City() {
         <div className="xl:col-span-2 space-y-6">
           <CityMap city={city} assessment={assessment} />
           <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
+          <HistoricalTrendsChart environmentalData={assessment.environmental_data} />
         </div>
         
         <div className="space-y-6">
