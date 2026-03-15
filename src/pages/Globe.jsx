@@ -199,11 +199,22 @@ export default function Globe() {
                   </svg>
                 </div>
                 <span className="text-xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                  planetary
+                  cascade
                 </span>
               </div>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-6">
+              <button onClick={() => navigate('/Landing')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Home
+              </button>
+              <button onClick={() => navigate('/Globe')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Globe
+              </button>
+              <button onClick={() => navigate('/Compare')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Compare
+              </button>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
