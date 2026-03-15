@@ -1,14 +1,5 @@
-#env
-.env
-.env.*
-
-# Google Cloud / GEE service account keys (never commit)
-src/satellite/key.json
-**/key.json
-*-credentials*.json
-
 # Logs
-/logs
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -31,13 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Python
-venv/
-__pycache__/
-*.pyc
-
-# Project
-.claude/
-flowchart/node_modules/
-data/
