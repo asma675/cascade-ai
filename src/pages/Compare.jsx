@@ -98,6 +98,7 @@ export default function Compare() {
           <ComparisonChart assessment1={assessment1} assessment2={assessment2} />
         )}
       </div>
+      <Footer />
     </div>
   );
 }

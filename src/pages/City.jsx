@@ -9,6 +9,7 @@ import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
 import AIChatbot from '@/components/city/AIChatbot';
 import ThemeToggle from '@/components/landing/ThemeToggle';
+import Footer from '@/components/Footer';
 import { Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -237,6 +238,7 @@ export default function City() {
       </div>
 
       <AIChatbot city={city} assessment={assessment} />
+      <Footer />
     </div>
   );
 }
