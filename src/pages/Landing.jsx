@@ -36,6 +36,9 @@ export default function Landing() {
               <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Compare
               </button>
+              <button onClick={() => navigate('/Dashboard')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Dashboard
+              </button>
               <ThemeToggle />
               <Button
                 onClick={() => navigate('/Globe')}
