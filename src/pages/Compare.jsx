@@ -49,8 +49,11 @@ export default function Compare() {
               <button onClick={() => navigate('/Globe')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Globe
               </button>
-              <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+              <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-purple-600 dark:text-purple-400">
                 Compare
+              </button>
+              <button onClick={() => navigate('/Dashboard')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Dashboard
               </button>
               <ThemeToggle />
             </div>
