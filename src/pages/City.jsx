@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -8,6 +8,9 @@ import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
 import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
 import AIChatbot from '@/components/city/AIChatbot';
+import ExposureVulnerability from '@/components/city/ExposureVulnerability';
+import OutcomePredictions from '@/components/city/OutcomePredictions';
+import EvidenceDrawer from '@/components/city/EvidenceDrawer';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,6 +20,35 @@ export default function City() {
   const navigate = useNavigate();
   const [assessment, setAssessment] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
+  const [selectedPrediction, setSelectedPrediction] = useState(null);
+  const [drawerEvidence, setDrawerEvidence] = useState([]);
+
+  const handleViewEvidence = useCallback(async (prediction) => {
+    setSelectedPrediction(prediction);
+    setDrawerEvidence([]);
+    setEvidenceDrawerOpen(true);
+
+    // Fetch matching evidence from service
+    const evidenceUrl = import.meta.env.VITE_EVIDENCE_SERVICE_URL || 'http://localhost:5001';
+    try {
+      const resp = await fetch(`${evidenceUrl}/evidence/match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hazard_type: prediction.hazard_type,
+          outcome_type: prediction.outcome_type,
+          limit: 10,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setDrawerEvidence(data.evidence || []);
+      }
+    } catch {
+      // Evidence service may not be running; show empty state
+    }
+  }, []);
 
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
@@ -95,6 +127,9 @@ export default function City() {
               <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Compare
               </button>
+              <button onClick={() => navigate('/Admin/Evidence')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                Evidence
+              </button>
               <ThemeToggle />
             </div>
           </div>
@@ -106,13 +141,28 @@ export default function City() {
         <div className="xl:col-span-2 space-y-6">
           <CityMap city={city} assessment={assessment} />
           <CascadingFlowchart chains={assessment.cascading_chains} hazards={assessment.hazards_detected} />
+          <OutcomePredictions
+            outcomePredictions={assessment.outcome_predictions}
+            onViewEvidence={handleViewEvidence}
+          />
         </div>
-        
+
         <div className="space-y-6">
           <CurrentConditions environmentalData={assessment.environmental_data} />
           <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
+          <ExposureVulnerability
+            exposureProfile={assessment.exposure_profile}
+            vulnerabilityProfile={assessment.vulnerability_profile}
+          />
         </div>
       </div>
+
+      <EvidenceDrawer
+        open={evidenceDrawerOpen}
+        onClose={() => setEvidenceDrawerOpen(false)}
+        prediction={selectedPrediction}
+        evidenceList={drawerEvidence}
+      />
 
       <AIChatbot city={city} assessment={assessment} />
     </div>
