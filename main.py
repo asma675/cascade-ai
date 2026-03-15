@@ -10,7 +10,7 @@ import re
 import sys
 
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from openai import OpenAI
 from supabase import create_client
 
@@ -19,18 +19,39 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# Optional: IBM Cloud RAG — retrieval endpoint that accepts POST { "query", "top_k" } and returns { "chunks": [ { "content", "metadata": { "source" }, "similarity" } ] }
+IBM_RETRIEVAL_URL = os.getenv("IBM_RETRIEVAL_URL", "").strip().rstrip("/")
+IBM_RETRIEVAL_APIKEY = os.getenv("IBM_RETRIEVAL_APIKEY", "").strip()
+WATSONX_PROJECT_ID = os.getenv("WATSONX_PROJECT_ID", "").strip()
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "http://localhost:5173")
 PORT = int(os.getenv("PORT", "5050"))
 
-if not all([OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY]):
-    sys.exit("Error: Set OPENAI_API_KEY, SUPABASE_URL, and SUPABASE_KEY in .env")
+if not OPENAI_API_KEY:
+    sys.exit("Error: Set OPENAI_API_KEY in .env")
+
+# RAG backend: either Supabase (vector DB) or IBM (retrieval endpoint)
+use_ibm_retrieval = bool(IBM_RETRIEVAL_URL)
+if not use_ibm_retrieval and not all([SUPABASE_URL, SUPABASE_KEY]):
+    sys.exit("Error: Set either SUPABASE_URL and SUPABASE_KEY, or IBM_RETRIEVAL_URL in .env")
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = None
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
 
-# CORS
+# CORS — allow frontend at 5173 to call /chains and /health
+@app.before_request
+def _cors_preflight():
+    if request.method == "OPTIONS":
+        r = make_response("", 204)
+        r.headers["Access-Control-Allow-Origin"] = CORS_ORIGIN
+        r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        r.headers["Access-Control-Max-Age"] = "86400"
+        return r
+
 @app.after_request
 def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = CORS_ORIGIN
@@ -40,7 +61,7 @@ def _cors(resp):
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "rag": True})
+    return jsonify({"status": "ok", "rag": True, "rag_backend": "ibm" if use_ibm_retrieval else "supabase"})
 
 # Queries that should get a short reply without RAG
 NON_QUESTION_PATTERNS = (
@@ -80,21 +101,23 @@ Rules:
 - Keep chains concise and evidence-based."""
 
 # System prompt for structured JSON output (for City flowchart)
-SYSTEM_PROMPT_JSON = """You are a climate risk analyst. Using ONLY the provided context (location indices and research excerpts), generate cascading impact chains for the SPECIFIC CITY named in the Location section. Be creative; each step must flow logically to the next. Weave DIRECT QUOTES into the description—quotes must be verbatim from the context, no additions.
+SYSTEM_PROMPT_JSON = """You are a climate risk analyst. The user message contains ALL the data you need: a Location block with real climate indices (EHF, SPI, NDVI, etc.) and detected hazards, plus research excerpts. Your ONLY job is to produce valid JSON. You have everything required — do not refuse, do not say you lack data or tools.
 
-Output ONLY valid JSON, no markdown or extra text. Use this exact structure:
+CRITICAL: Never output phrases like "I don't have the necessary tools", "I cannot", "I'm unable", or any refusal. If you find yourself about to refuse, stop and instead generate chains using whatever location indices and research excerpts are present in the user message.
+
+Output ONLY valid JSON, no markdown fences, no preamble, no explanation. Use this exact structure:
 {
   "chains": [
     {
       "chain_id": "short_unique_id",
-      "probability": 0.0 to 1.0,
-      "severity": 0.0 to 1.0,
-      "confidence": 0.0 to 1.0,
+      "probability": 0.0,
+      "severity": 0.0,
+      "confidence": 0.0,
       "nodes": [
         {
-          "layer": "one of: hazard, environmental, infrastructure, human, economic",
-          "description": "One to three sentences that connect this step to the previous one and to the city. Integrate a direct quote from the cited source inside the sentence (e.g. 'The study found that heat stress is increasingly affecting populations; as noted, \\'vulnerable groups such as the elderly\\' are at higher risk.'). The quoted part must be copied character-for-character from the context—do not paraphrase or add words. For location-only steps, use the actual index values from the Location section.",
-          "citation": "Exact source: e.g. 'Source: 2022 - Heat stress in Africa under high intensity climate change.pdf' or 'Location data'"
+          "layer": "hazard | environmental | infrastructure | human | economic",
+          "description": "1–3 sentences connecting this step to the previous and to the city. Integrate a verbatim quote from the cited source (copy the exact words). For location-only steps, use the actual index values from the Location block (e.g. 'EHF of 4.2 indicates...').",
+          "citation": "Source: exact-filename.pdf  OR  Location data"
         }
       ]
     }
@@ -102,11 +125,15 @@ Output ONLY valid JSON, no markdown or extra text. Use this exact structure:
 }
 
 Rules:
-- layer: use any of hazard, environmental, infrastructure, human, economic. Order nodes so the chain flows logically; vary the sequence across chains.
-- description: Write 1–3 sentences. The sentence MUST contain a verbatim quote from the context—copy a phrase or sentence exactly as it appears in the [Source: ...] excerpts. Integrate it naturally (e.g. 'In [City], EHF of X indicates excess heat; the report states that \\'exact text from context\\'.'). Do NOT invent, paraphrase, or add to quotes; only use text that appears in the provided context.
-- citation: exact document filename from the context or "Location data".
-- Reference the city by name in at least the first node of each chain.
-- Generate 1–3 chains, 4–6 nodes each. Use at most 5 different sources. probability/severity/confidence must reflect the evidence."""
+- You MUST always produce at least one chain. Never return empty chains [].
+- Use the Location block indices (EHF, SPI, NDVI, hazards) as your primary evidence. Cite them as "Location data".
+- Use research excerpts as supporting evidence. Cite them by exact filename.
+- layer: any of hazard, environmental, infrastructure, human, economic — in whatever causal order fits.
+- Each chain: 3–6 nodes. Generate 1–4 chains total.
+- Reference the city by name in at least one node per chain.
+- probability / severity / confidence: derive from the evidence (e.g. high EHF → high probability of heat hazard).
+- Verbatim quotes: copy a short phrase exactly as it appears in the [Source: ...] excerpts. Do not invent or paraphrase quoted text.
+- If research context is sparse, build the chain primarily from the Location indices and hazards — that is real data."""
 
 
 def is_greeting_or_off_topic(query: str) -> bool:
@@ -134,7 +161,187 @@ def get_query_embedding(query: str) -> list[float]:
     return response.data[0].embedding
 
 
+def _ibm_iam_token(api_key: str) -> str:
+    """
+    Exchange IBM Cloud API key for a short-lived IAM access token.
+    IBM APIs require Bearer <token>, NOT Bearer <api_key> directly.
+    """
+    import urllib.request
+    import urllib.error
+    from urllib.parse import urlencode
+
+    if not api_key:
+        return ""
+    body = urlencode({
+        "grant_type": "urn:ibm:params:oauth:grant-type:apikey",
+        "apikey": api_key,
+    }).encode()
+    req = urllib.request.Request(
+        "https://iam.cloud.ibm.com/identity/token",
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        token = data.get("access_token", "")
+        if not token:
+            print(f"[RAG] IBM IAM response had no access_token. Keys: {list(data.keys())}", flush=True)
+        return token
+    except urllib.error.HTTPError as e:
+        try:
+            err = e.read().decode()[:300]
+        except Exception:
+            err = ""
+        print(f"[RAG] IBM IAM token failed {e.code}: {err}", flush=True)
+        return ""
+    except Exception as e:
+        print(f"[RAG] IBM IAM token error: {e}", flush=True)
+        return ""
+
+
+def retrieve_chunks_ibm(query: str, top_k: int = 5) -> list[dict]:
+    """
+    Retrieve chunks from IBM watsonx ML deployment.
+
+    Key fixes:
+    - is_ml_deployment only checks for /deployments/ (not 'ai_service' — that broke ca-tor URLs)
+    - watsonx ML requires ?version=YYYY-MM-DD and ?project_id as query params
+    - IAM token exchange is mandatory; raw API key is NEVER sent as Bearer
+    - Logs raw response keys so you can see exactly what shape IBM returns
+    """
+    import urllib.request
+    import urllib.error
+    from urllib.parse import urlencode
+
+    if not IBM_RETRIEVAL_URL or not IBM_RETRIEVAL_APIKEY:
+        print("[RAG] IBM_RETRIEVAL_URL or IBM_RETRIEVAL_APIKEY not configured.", flush=True)
+        return []
+
+    # Exchange API key for IAM access token.
+    # Sending the raw key as Bearer returns 401 — IBM requires the exchanged token.
+    token = _ibm_iam_token(IBM_RETRIEVAL_APIKEY)
+    if not token:
+        print("[RAG] IBM IAM token exchange failed — check IBM_RETRIEVAL_APIKEY.", flush=True)
+        return []
+
+    # Detect watsonx ML deployment by /deployments/ in the URL.
+    # Original code also required 'ai_service', which excluded ca-tor.ml.cloud.ibm.com URLs.
+    is_ml_deployment = "/deployments/" in IBM_RETRIEVAL_URL
+
+    if is_ml_deployment:
+        # watsonx ML requires version + project_id as query params — requests fail without them
+        params = {"version": "2024-01-29"}
+        if WATSONX_PROJECT_ID:
+            params["project_id"] = WATSONX_PROJECT_ID
+        sep = "&" if "?" in IBM_RETRIEVAL_URL else "?"
+        url = IBM_RETRIEVAL_URL + sep + urlencode(params)
+        # ML deployments use a messages-style (chat) body
+        payload = {
+            "messages": [{"role": "user", "content": query}],
+            "query": query,
+            "top_k": top_k,
+        }
+    else:
+        # Plain RAG adapter (e.g. localhost:5051/search)
+        url = f"{IBM_RETRIEVAL_URL}/search"
+        payload = {"query": query, "top_k": top_k}
+
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = e.read().decode()[:500]
+        except Exception:
+            err_body = ""
+        print(f"[RAG] IBM retrieval failed {e.code}: {err_body}", flush=True)
+        return []
+    except Exception as e:
+        print(f"[RAG] IBM retrieval error: {e}", flush=True)
+        return []
+
+    print(f"[RAG] IBM raw response keys: {list(data.keys())}", flush=True)
+
+    # Normalize: try standard chunk/result arrays first
+    chunks = (
+        data.get("chunks")
+        or data.get("results")
+        or data.get("passages")
+        or data.get("retrieval_results")
+        or []
+    )
+
+    # OpenAI-style: choices[0].message.content  <- IBM watsonx returns this shape
+    if not chunks:
+        choices = data.get("choices")
+        if isinstance(choices, list) and len(choices) > 0:
+            c0 = choices[0]
+            if isinstance(c0, dict):
+                msg = c0.get("message") or {}
+                content = (
+                    (msg.get("content") if isinstance(msg, dict) else None)
+                    or c0.get("content")
+                    or c0.get("text")
+                )
+                if isinstance(content, str) and content.strip():
+                    print(f"[RAG] IBM choices[0].message.content extracted ({len(content)} chars)", flush=True)
+                    chunks.append({"content": content.strip(), "metadata": {"source": "ibm_rag_deployment"}, "similarity": 0.8})
+
+    # watsonx ML AI service wraps generated output in predictions[]
+    if not chunks:
+        preds = data.get("predictions") or data.get("output") or []
+        if isinstance(preds, list):
+            for p in preds:
+                if isinstance(p, dict):
+                    content = (
+                        p.get("content")
+                        or p.get("generated_text")
+                        or (p.get("output") or {}).get("text")
+                        or str(p)
+                    )
+                    if content:
+                        chunks.append({"content": content, "metadata": {"source": "ibm"}, "similarity": 0.8})
+                elif isinstance(p, str) and p.strip():
+                    chunks.append({"content": p, "metadata": {"source": "ibm"}, "similarity": 0.8})
+        elif isinstance(preds, dict) and preds.get("content"):
+            chunks.append({"content": preds["content"], "metadata": {"source": "ibm"}, "similarity": 0.8})
+
+    if not chunks:
+        print(f"[RAG] IBM response contained no usable chunks. Full keys: {list(data.keys())}", flush=True)
+        try:
+            print(f"[RAG] IBM raw response (truncated): {__import__("json").dumps(data)[:500]}", flush=True)
+        except Exception:
+            pass
+
+    out = []
+    for c in chunks:
+        if isinstance(c, str):
+            out.append({"content": c, "metadata": {"source": "unknown"}, "similarity": 0.0})
+        else:
+            out.append({
+                "content": c.get("content") or c.get("text") or c.get("passage") or c.get("document") or "",
+                "metadata": c.get("metadata") or {"source": c.get("source") or "unknown"},
+                "similarity": float(c.get("similarity") or c.get("score") or 0),
+            })
+    return out[:top_k]
+
+
 def retrieve_chunks(query: str, top_k: int = 5) -> list[dict]:
+    if use_ibm_retrieval:
+        return retrieve_chunks_ibm(query, top_k)
     embedding = get_query_embedding(query)
     result = supabase.rpc(
         "match_documents",
@@ -228,7 +435,6 @@ def ask(query: str, city: dict | None = None, assessment: dict | None = None) ->
         )
         return msg, []
 
-    # Optional location block
     location_block = ""
     if city:
         location_block = "\n\n## Location and indices (use only these values)\n" + build_location_block(city, assessment)
@@ -289,7 +495,6 @@ def ask_json(
     if city:
         location_block = "\n\n## Location and indices (use only these values)\n" + build_location_block(city, assessment)
 
-    # Include city name in retrieval so studies relevant to the location are favoured
     city_name = (city or {}).get("name", "")
     search_query = query or "cascading impact chains hazards heat stress drought flood urban"
     if city_name:
@@ -324,21 +529,74 @@ def ask_json(
 
     raw = (response.choices[0].message.content or "").strip()
     sources = [
-        {"index": i, "source": c.get("metadata", {}).get("source", "unknown"), "similarity": round(c.get("similarity", 0), 2), "snippet": (c.get("content") or "")[:200].replace("\n", " ").strip()}
+        {
+            "index": i,
+            "source": c.get("metadata", {}).get("source", "unknown"),
+            "similarity": round(c.get("similarity", 0), 2),
+            "snippet": (c.get("content") or "")[:200].replace("\n", " ").strip(),
+        }
         for i, c in enumerate(chunks, 1)
     ]
 
-    # Parse JSON (allow wrapped in ```json ... ```)
-    try:
-        if "```" in raw:
-            raw = re.sub(r"^```(?:json)?\s*", "", raw)
-            raw = re.sub(r"\s*```$", "", raw)
-        data = json.loads(raw)
-        chains = data.get("chains")
-        if isinstance(chains, list) and len(chains) > 0:
-            return chains, sources
-    except (json.JSONDecodeError, TypeError):
-        pass
+    # Detect model refusals before attempting JSON parse — LLM sometimes says
+    # "I don't have the necessary tools/data" even when context is fully provided.
+    _REFUSAL_PHRASES = (
+        "i don't have the necessary",
+        "i do not have the necessary",
+        "i cannot generate",
+        "i'm unable",
+        "i am unable",
+        "i lack the",
+        "no tools",
+        "no data available",
+        "cannot produce",
+        "not possible to generate",
+    )
+    if any(phrase in raw.lower() for phrase in _REFUSAL_PHRASES):
+        print(f"[RAG] Model refused ask_json — retrying with explicit override. Raw start: {raw[:120]}", flush=True)
+        retry_messages = [
+            {"role": "system", "content": SYSTEM_PROMPT_JSON},
+            {"role": "user", "content": user_content},
+            {"role": "assistant", "content": raw},
+            {
+                "role": "user",
+                "content": (
+                    "IGNORE your previous response. You have all the data you need in the Location block "
+                    "and context excerpts above — use them now. "
+                    "Output ONLY valid JSON starting with { and ending with }. "
+                    "Include at least one chain. No explanation, no refusal text."
+                ),
+            },
+        ]
+        retry_response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=retry_messages,
+            temperature=0.0,
+            max_tokens=2000,
+        )
+        raw = (retry_response.choices[0].message.content or "").strip()
+        print(f"[RAG] Retry raw start: {raw[:120]}", flush=True)
+
+    def _try_parse(text: str) -> list | None:
+        if "```" in text:
+            text = re.sub(r"^```(?:json)?\s*", "", text)
+            text = re.sub(r"\s*```$", "", text)
+        # Strip any leading prose before the first {
+        brace = text.find("{")
+        if brace > 0:
+            text = text[brace:]
+        try:
+            parsed = json.loads(text)
+            c = parsed.get("chains")
+            if isinstance(c, list) and len(c) > 0:
+                return c
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return None
+
+    result_chains = _try_parse(raw)
+    if result_chains:
+        return result_chains, sources
     return [], sources
 
 
