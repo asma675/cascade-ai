@@ -355,6 +355,7 @@ export default function Globe() {
           ))}
         </MapContainer>
       </div>
+      <Footer />
     </div>
   );
 }
