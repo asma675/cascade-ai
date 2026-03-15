@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaf
 import { Button } from '@/components/ui/button';
 import { Search, Loader2, MapPin, ArrowLeft, Zap } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
+import Footer from '@/components/Footer';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
