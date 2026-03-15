@@ -35,7 +35,7 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
 
   const computedEHF = useMemo(() => {
     if (indices.ehf != null) return null;
-    const recentDailyMeansRaw = baseline?.recentDailyMeans ?? baseline?.recent_daily_means;
+    const recentDailyMeansRaw = baseline?.recentDailyMeans ?? baseline?.recentMeanTemps ?? baseline?.recent_daily_means;
     const recentMaxTempsRaw = baseline?.recentMaxTemps ?? baseline?.recent_max_temps;
     const T95Raw = baseline?.T95 ?? baseline?.t95;
     let arr = Array.isArray(recentDailyMeansRaw)
@@ -60,7 +60,7 @@ export default function EnvironmentalMetrics({ environmentalData, city }) {
     const T30 = arr.reduce((a, b) => a + b, 0) / arr.length;
     const EHI_sig = T3 - T95;
     const EHI_accl = T3 - T30;
-    const EHF = EHI_sig * Math.max(1, EHI_accl);
+    const EHF = Math.max(0, EHI_sig * Math.max(1, EHI_accl));
     return { ehf: EHF, details: { T95, T3, T30, EHI_sig, EHI_accl } };
   }, [indices.ehf, baseline, environmentalData.temperature_30d]);
 
