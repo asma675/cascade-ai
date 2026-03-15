@@ -93,6 +93,22 @@ export default function Interactive3DGlobe() {
     const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
     scene.add(glowMesh);
 
+    // Create satellite
+    const satelliteGeometry = new THREE.SphereGeometry(0.03, 16, 16);
+    const satelliteMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffd700,
+      emissiveIntensity: 0.5,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const satellite = new THREE.Mesh(satelliteGeometry, satelliteMaterial);
+    scene.add(satellite);
+
+    // Satellite orbit path
+    const orbitRadius = 1.8;
+    let satelliteAngle = 0;
+
     // Mouse move listener
     const onMouseMove = (event) => {
       const rect = containerRef.current?.getBoundingClientRect();
@@ -134,6 +150,12 @@ export default function Interactive3DGlobe() {
       if (glowMesh) {
         glowMesh.rotation.y += 0.003;
       }
+
+      // Animate satellite orbit
+      satelliteAngle += 0.01;
+      satellite.position.x = Math.cos(satelliteAngle) * orbitRadius;
+      satellite.position.y = Math.sin(satelliteAngle * 0.5) * 0.3;
+      satellite.position.z = Math.sin(satelliteAngle) * orbitRadius;
 
       renderer.render(scene, camera);
     };
