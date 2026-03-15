@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2, MapPin, ArrowLeft, Zap } from 'lucide-react';
-import ThemeToggle from '@/components/landing/ThemeToggle';
+import Header from '@/components/shared/Header';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -179,48 +179,7 @@ export default function Globe() {
 
   return (
     <div className="h-screen bg-white dark:bg-slate-950 flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-[1000] bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-[1760px] mx-auto px-6 lg:px-10 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/Landing')}
-                className="rounded-full"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                  cascade
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <button onClick={() => navigate('/Landing')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                Home
-              </button>
-              <button onClick={() => navigate('/Globe')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                Globe
-              </button>
-              <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                Compare
-              </button>
-              <button onClick={() => navigate('/Dashboard')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                Dashboard
-              </button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Search Section */}
       <div className="relative z-[999] bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 py-6">
