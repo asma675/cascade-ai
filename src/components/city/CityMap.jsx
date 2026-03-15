@@ -26,7 +26,7 @@ function MapClickHandler({ onMapClick }) {
 export default function CityMap({ city, assessment }) {
   const [radius, setRadius] = useState(5000); // Default 5km
   const [shape, setShape] = useState('circle'); // 'circle' or 'square'
-  const [selectedPoint, setSelectedPoint] = useState([city.latitude, city.longitude]);
+  const [selectedPoint, setSelectedPoint] = useState(null);
 
   const handleMapClick = (latlng) => {
     setSelectedPoint([latlng.lat, latlng.lng]);
@@ -115,52 +115,58 @@ export default function CityMap({ city, assessment }) {
           
           <MapClickHandler onMapClick={handleMapClick} />
           
-          <Marker position={selectedPoint}>
-            <Popup>
-              <div className="text-center p-2">
-                <h3 className="font-bold text-sm">Selected Area</h3>
-                <p className="text-xs text-slate-600">
-                  {selectedPoint[0].toFixed(4)}, {selectedPoint[1].toFixed(4)}
-                </p>
-                <p className="text-xs text-slate-600 mt-1">
-                  Radius: {(radius / 1000).toFixed(1)} km
-                </p>
-              </div>
-            </Popup>
-          </Marker>
+          {selectedPoint && (
+            <>
+              <Marker position={selectedPoint}>
+                <Popup>
+                  <div className="text-center p-2">
+                    <h3 className="font-bold text-sm">Selected Area</h3>
+                    <p className="text-xs text-slate-600">
+                      {selectedPoint[0].toFixed(4)}, {selectedPoint[1].toFixed(4)}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Radius: {(radius / 1000).toFixed(1)} km
+                    </p>
+                  </div>
+                </Popup>
+              </Marker>
 
-          {shape === 'circle' ? (
-            <Circle
-              center={selectedPoint}
-              radius={radius}
-              pathOptions={{
-                color: '#a855f7',
-                fillColor: '#a855f7',
-                fillOpacity: 0.15,
-                weight: 2
-              }}
-            />
-          ) : (
-            <Rectangle
-              bounds={getSquareBounds()}
-              pathOptions={{
-                color: '#a855f7',
-                fillColor: '#a855f7',
-                fillOpacity: 0.15,
-                weight: 2
-              }}
-            />
+              {shape === 'circle' ? (
+                <Circle
+                  center={selectedPoint}
+                  radius={radius}
+                  pathOptions={{
+                    color: '#a855f7',
+                    fillColor: '#a855f7',
+                    fillOpacity: 0.15,
+                    weight: 2
+                  }}
+                />
+              ) : (
+                <Rectangle
+                  bounds={getSquareBounds()}
+                  pathOptions={{
+                    color: '#a855f7',
+                    fillColor: '#a855f7',
+                    fillOpacity: 0.15,
+                    weight: 2
+                  }}
+                />
+              )}
+            </>
           )}
         </MapContainer>
 
-        <div className="absolute bottom-4 left-4 z-[1000] bg-white dark:bg-slate-900 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg">
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Selected: {(radius / 1000).toFixed(1)} km {shape}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Lat: {selectedPoint[0].toFixed(4)}, Lng: {selectedPoint[1].toFixed(4)}
-          </p>
-        </div>
+        {selectedPoint && (
+          <div className="absolute bottom-4 left-4 z-[1000] bg-white dark:bg-slate-900 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Selected: {(radius / 1000).toFixed(1)} km {shape}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Lat: {selectedPoint[0].toFixed(4)}, Lng: {selectedPoint[1].toFixed(4)}
+            </p>
+          </div>
+        )}
       </div>
     </Card>
   );
