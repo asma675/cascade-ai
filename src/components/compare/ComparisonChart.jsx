@@ -3,15 +3,11 @@ import { Card } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function ComparisonChart({ assessment1, assessment2 }) {
-  if (!assessment1?.hazards_detected || !assessment2?.hazards_detected) {
-    return null;
-  }
-
   const hazardComparison = assessment1.hazards_detected.map((h1, idx) => {
     const h2 = assessment2.hazards_detected[idx];
     return {
       hazard: h1.type,
-      [assessment1.city_name]: h1.score || 0,
+      [assessment1.city_name]: h1.score,
       [assessment2.city_name]: h2?.score || 0
     };
   });

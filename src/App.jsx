@@ -9,7 +9,6 @@ import Landing from './pages/Landing';
 import Globe from './pages/Globe';
 import City from './pages/City.jsx';
 import Compare from './pages/Compare';
-import Dashboard from './pages/Dashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -42,7 +41,6 @@ const AuthenticatedApp = () => {
       <Route path="/Globe" element={<Globe />} />
       <Route path="/City/:cityName" element={<City />} />
       <Route path="/Compare" element={<Compare />} />
-      <Route path="/Dashboard" element={<Dashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
