@@ -181,29 +181,6 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="py-12 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-        <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <img 
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b531ed0b1c34a9ca40d4a5/5b414314b_image.png" 
-                alt="Cascade Logo" 
-                className="h-10 w-10"
-              />
-              <span className="text-xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                cascade
-              </span>
-            </div>
-            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-              AI-powered climate risk intelligence platform
-            </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-3">
-              © Asma Ahmed, Haris Kamel, Ishav Sohal, Hayagrive Srikanth 2026
-            </p>
-          </div>
-        </div>
-      </footer>
       <Footer />
     </div>
   );
