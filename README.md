@@ -1,39 +1,82 @@
-**Welcome to your Base44 project** 
+## Inspiration
 
-**About**
+Climate change is increasing the frequency and intensity of environmental disasters. Events such as **wildfires, floods, heatwaves, and droughts** are no longer isolated incidents — they often trigger **cascading effects across ecosystems and cities**.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+However, most climate data is scattered across complex datasets that are difficult for the public to interpret. We wanted to build a platform that transforms complex environmental data into **clear, visual, and actionable insights**.
 
-This project contains everything you need to run your app locally.
+**Cascade** was created to help people understand how environmental risks evolve and interact across regions, allowing communities to anticipate climate threats rather than react after disasters occur.
 
-**Edit the code in your local development environment**
+---
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+## What it does
 
-**Prerequisites:** 
+**Cascade** is an **AI-powered climate intelligence platform** that analyzes environmental risks around the world.
 
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+Users can search any location and explore environmental risks such as:
 
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
+- Wildfires  
+- Flooding  
+- Extreme heat  
+- Drought conditions  
+- Storm patterns  
 
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
-```
+The platform visualizes global risk patterns and generates insights using climate indicators and environmental data.
 
-Run the app: `npm run dev`
+Cascade focuses on **cascading climate risks**, where one event increases the probability of another.
 
-**Publish your changes**
+For example:
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+- Heatwaves increasing wildfire probability  
+- Heavy rainfall triggering floods and landslides  
+- Drought conditions weakening ecosystems  
 
-**Docs & Support**
+Cascade helps translate complex environmental data into insights that can support **decision-making, planning, and awareness.**
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+---
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+## How we built it
+
+Cascade combines modern web technologies with AI-powered data analysis.
+
+Key components include:
+
+- **Interactive global visualization** for exploring environmental risks  
+- **AI analysis models** for interpreting climate indicators  
+- **Environmental and satellite datasets** for risk evaluation  
+- **Cloud-based architecture** for scalable data processing  
+
+The system integrates multiple environmental signals to generate simplified **risk intelligence for cities worldwide.**
+
+---
+
+## Challenges we ran into
+
+Working with environmental datasets presented several challenges.
+
+Climate data often comes from **different sources and formats**, requiring careful integration and processing. Another challenge was designing a visualization that communicates risk clearly without overwhelming users.
+
+Balancing **technical complexity with usability** was a major focus throughout development.
+
+---
+
+## What we learned
+
+Through this project we learned how powerful **AI, data visualization, and environmental datasets** can be when combined to solve real-world problems.
+
+We also learned the importance of building tools that make complex data **accessible and understandable** to a broad audience.
+
+Cascade demonstrates how technology can help transform environmental information into **meaningful insights.**
+
+---
+
+## What's next for Cascade
+
+Future improvements could include:
+
+- Real-time disaster alerts  
+- Advanced AI risk prediction models  
+- Historical climate trend analysis  
+- Infrastructure vulnerability analysis  
+- Integration with emergency planning systems  
+
+Our long-term vision is for Cascade to become a **global climate intelligence platform** that helps communities anticipate environmental risks and build resilience.
