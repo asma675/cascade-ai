@@ -25,13 +25,13 @@ export default function Landing() {
               </span>
             </div>
             <div className="flex items-center gap-6">
-              <button onClick={() => navigate('/Landing')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+              <button onClick={() => navigate('/Landing')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Home
               </button>
-              <button onClick={() => navigate('/Globe')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+              <button onClick={() => navigate('/Globe')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Globe
               </button>
-              <button onClick={() => navigate('/Compare')} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+              <button onClick={() => navigate('/Compare')} className="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                 Compare
               </button>
               <ThemeToggle />
@@ -53,13 +53,13 @@ export default function Landing() {
         </div>
         <div className="relative max-w-[1760px] mx-auto px-6 lg:px-10">
           <div className="text-center max-w-3xl mx-auto mb-12 pt-96">
-            <h1 className="text-6xl lg:text-7xl font-serif-display font-bold text-slate-900 dark:text-white mb-6">
+            <h1 className="text-6xl lg:text-7xl font-serif-display font-bold text-slate-900 dark:text-white mb-6 leading-tight">
               Discover environmental risks
               <span className="block mt-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
                 in cities worldwide
               </span>
             </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400 font-light">
+            <p className="text-lg text-slate-700 dark:text-slate-300 font-medium">
               AI-powered climate intelligence with real-time NASA satellite data
             </p>
           </div>
@@ -72,13 +72,13 @@ export default function Landing() {
                   onClick={() => navigate('/Globe')}
                   className="flex-1 text-left px-6 py-4 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white mb-1">Where</div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">Search cities</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white mb-1">Where</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-300">Search cities</div>
                 </button>
-                <div className="w-px h-12 bg-slate-200 dark:bg-slate-800"></div>
+                <div className="w-px h-12 bg-slate-200 dark:bg-slate-700"></div>
                 <button className="flex-1 text-left px-6 py-4 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white mb-1">Analysis Type</div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">Risk assessment</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white mb-1">Analysis Type</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-300">Risk assessment</div>
                 </button>
                 <button 
                   onClick={() => navigate('/Globe')}
@@ -94,17 +94,17 @@ export default function Landing() {
           <div className="flex items-center justify-center gap-12 text-center">
             <div>
               <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">30+</div>
-              <div className="text-sm text-slate-600 dark:text-slate-500 mt-1">Climate Indices</div>
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1">Climate Indices</div>
             </div>
-            <div className="w-px h-12 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-12 bg-slate-200 dark:bg-slate-700"></div>
             <div>
               <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">Live</div>
-              <div className="text-sm text-slate-600 dark:text-slate-500 mt-1">NASA Data</div>
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1">NASA Data</div>
             </div>
-            <div className="w-px h-12 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-12 bg-slate-200 dark:bg-slate-700"></div>
             <div>
               <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 dark:from-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">Global</div>
-              <div className="text-sm text-slate-600 dark:text-slate-500 mt-1">Coverage</div>
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1">Coverage</div>
             </div>
           </div>
         </div>
@@ -114,10 +114,10 @@ export default function Landing() {
       <div className="py-20 bg-slate-50 dark:bg-slate-900/50">
         <div className="max-w-[1760px] mx-auto px-6 lg:px-10">
           <div className="mb-12">
-            <h2 className="text-5xl font-serif-display font-bold text-slate-900 dark:text-white mb-2">
+            <h2 className="text-5xl font-serif-display font-bold text-slate-900 dark:text-white mb-2 leading-tight">
               Climate intelligence platform
             </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400">
+            <p className="text-lg text-slate-700 dark:text-slate-300 font-medium">
               Advanced risk analysis powered by AI and satellite data
             </p>
           </div>
@@ -129,8 +129,8 @@ export default function Landing() {
                   <img src="https://images.unsplash.com/photo-1601134467661-3d775b999c8b?w=800&q=80" alt="Heatwave" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Multi-Hazard Detection</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Multi-Hazard Detection</h3>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                     Heatwave, drought, air quality, and wind risk analysis
                   </p>
                 </div>
@@ -143,8 +143,8 @@ export default function Landing() {
                   <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80" alt="Cascading risks" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Cascading Impact Chains</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Cascading Impact Chains</h3>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                     AI-generated probabilistic risk propagation analysis
                   </p>
                 </div>
@@ -157,8 +157,8 @@ export default function Landing() {
                   <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&q=80" alt="GeoJSON export" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">GeoJSON Export</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">GeoJSON Export</h3>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                     Export to QGIS, ArcGIS, and geospatial platforms
                   </p>
                 </div>
@@ -182,10 +182,10 @@ export default function Landing() {
                 cascade
               </span>
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
               AI-powered climate risk intelligence platform
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mt-3">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-3">
               © Asma Ahmed, Haris Kamel, Ishav Sohal, Hayagrive Srikanth 2026
             </p>
           </div>
