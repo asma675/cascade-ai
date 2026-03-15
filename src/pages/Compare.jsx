@@ -24,8 +24,11 @@ export default function Compare() {
     queryFn: () => base44.entities.RiskAssessment.list(),
   });
 
-  const assessment1 = assessments.find(a => a.city_id === city1Id);
-  const assessment2 = assessments.find(a => a.city_id === city2Id);
+  const city1 = cities.find(c => c.id === city1Id);
+  const city2 = cities.find(c => c.id === city2Id);
+  
+  const assessment1 = city1 ? assessments.find(a => a.city_name === city1.name) : null;
+  const assessment2 = city2 ? assessments.find(a => a.city_name === city2.name) : null;
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
@@ -96,6 +99,63 @@ export default function Compare() {
             </Select>
           </Card>
         </div>
+
+        {city1Id && city2Id && !assessment1 && !assessment2 && (
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-12 text-center">
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              No risk assessments found for the selected cities.
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-500 mb-6">
+              Visit each city's page to generate a risk analysis first.
+            </p>
+            <div className="flex gap-3 justify-center">
+              {city1 && !assessment1 && (
+                <Button
+                  onClick={() => navigate(`/City/${encodeURIComponent(city1.name)}`)}
+                  className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white"
+                >
+                  Analyze {city1.name}
+                </Button>
+              )}
+              {city2 && !assessment2 && (
+                <Button
+                  onClick={() => navigate(`/City/${encodeURIComponent(city2.name)}`)}
+                  className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white"
+                >
+                  Analyze {city2.name}
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {assessment1 && !assessment2 && (
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8 text-center">
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              {city2?.name} hasn't been analyzed yet.
+            </p>
+            <Button
+              onClick={() => navigate(`/City/${encodeURIComponent(city2.name)}`)}
+              className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white"
+            >
+              Analyze {city2?.name}
+            </Button>
+          </Card>
+        )}
+
+        {!assessment1 && assessment2 && (
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8 text-center">
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              {city1?.name} hasn't been analyzed yet.
+            </p>
+            <Button
+              onClick={() => navigate(`/City/${encodeURIComponent(city1.name)}`)}
+              className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white"
+            >
+              Analyze {city1?.name}
+            </Button>
+          </Card>
+        )}
 
         {assessment1 && assessment2 && (
           <ComparisonChart assessment1={assessment1} assessment2={assessment2} />
