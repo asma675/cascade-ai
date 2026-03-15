@@ -195,7 +195,7 @@ export default function City() {
                 className="h-10 w-10"
               />
               <span className="text-xl font-serif-display font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                cascade
+                Cascade
               </span>
             </div>
             <div className="flex items-center gap-6">
