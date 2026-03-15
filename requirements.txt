@@ -1,0 +1,6 @@
+supabase
+openai
+langchain-community
+langchain-openai
+pypdf
+python-dotenv
