@@ -117,7 +117,7 @@ export default function Landing() {
             <div className="group cursor-pointer">
               <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
                 <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-800">
-                  <img src="https://images.unsplash.com/photo-1584622181563-430f63602d4b?w=600&h=450&fit=crop" alt="Heatwave" className="w-full h-full object-cover" />
+                  <img src="https://images.unsplash.com/photo-1601134467661-3d775b999c8b?w=800&q=80" alt="Heatwave" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Multi-Hazard Detection</h3>
@@ -131,7 +131,7 @@ export default function Landing() {
             <div className="group cursor-pointer">
               <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
                 <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-800">
-                  <img src="https://images.unsplash.com/photo-1611080626919-bc8985bc8ba0?w=600&h=450&fit=crop" alt="Cascading risks" className="w-full h-full object-cover" />
+                  <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80" alt="Cascading risks" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Cascading Impact Chains</h3>
@@ -145,7 +145,7 @@ export default function Landing() {
             <div className="group cursor-pointer">
               <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
                 <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-800">
-                  <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=600&h=450&fit=crop" alt="GeoJSON export" className="w-full h-full object-cover" />
+                  <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&q=80" alt="GeoJSON export" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">GeoJSON Export</h3>
