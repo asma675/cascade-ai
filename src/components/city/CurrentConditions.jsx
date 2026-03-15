@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Thermometer, Droplets, Wind, Flame, CloudRain } from 'lucide-react';
+import { Thermometer, Droplets, Wind } from 'lucide-react';
 
 export default function CurrentConditions({ environmentalData }) {
   const current = environmentalData?.current || {};
@@ -29,22 +29,6 @@ export default function CurrentConditions({ environmentalData }) {
       sublabel: current.wind_direction || '',
       color: 'text-cyan-400',
       bgColor: 'bg-cyan-500/10'
-    },
-    {
-      icon: CloudRain,
-      label: 'Pressure',
-      value: current.pressure ? `${current.pressure} mb` : 'N/A',
-      sublabel: current.cloud_cover ? `${current.cloud_cover}% clouds` : '',
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10'
-    },
-    {
-      icon: Flame,
-      label: 'UV Index',
-      value: current.uv_index ? current.uv_index : 'N/A',
-      sublabel: current.visibility ? `${current.visibility} km vis` : '',
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/10'
     }
   ];
 
