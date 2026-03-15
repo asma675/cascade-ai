@@ -113,6 +113,8 @@ export default function City() {
           <EnvironmentalMetrics environmentalData={assessment.environmental_data} city={city} />
         </div>
       </div>
+
+      <AIChatbot city={city} assessment={assessment} />
     </div>
   );
 }
