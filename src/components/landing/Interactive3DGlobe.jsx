@@ -94,7 +94,7 @@ export default function Interactive3DGlobe() {
     scene.add(glowMesh);
 
     // Create satellite
-    const satelliteGeometry = new THREE.SphereGeometry(0.03, 16, 16);
+    const satelliteGeometry = new THREE.SphereGeometry(0.05, 16, 16);
     const satelliteMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       emissive: 0xffd700,
@@ -106,7 +106,7 @@ export default function Interactive3DGlobe() {
     scene.add(satellite);
 
     // Satellite orbit path
-    const orbitRadius = 1.8;
+    const orbitRadius = 1.4;
     let satelliteAngle = 0;
 
     // Mouse move listener
