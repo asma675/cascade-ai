@@ -7,6 +7,7 @@ import CascadingFlowchart from '@/components/city/CascadingFlowchart';
 import EnvironmentalMetrics from '@/components/city/EnvironmentalMetrics';
 import CurrentConditions from '@/components/city/CurrentConditions';
 import CityHeader from '@/components/city/CityHeader';
+import AIChatbot from '@/components/city/AIChatbot';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';

@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
 import ThemeToggle from '@/components/landing/ThemeToggle';
 import Interactive3DGlobe from '@/components/landing/Interactive3DGlobe';
+import StarryBackground from '@/components/landing/StarryBackground';
 
 export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950 relative">
+      <StarryBackground />
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-[1760px] mx-auto px-6 lg:px-10 py-4">
