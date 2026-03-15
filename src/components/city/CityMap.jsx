@@ -54,20 +54,20 @@ export default function CityMap({ city, assessment }) {
       <div className="mb-6 space-y-4">
         <div>
           <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
-            Radius: {radius} m
+            Radius: {radius >= 1000 ? `${(radius / 1000).toFixed(1)} km` : `${radius} m`}
           </label>
           <Slider
             value={[radius]}
             onValueChange={(val) => setRadius(val[0])}
             min={50}
-            max={1000}
+            max={5000}
             step={50}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
             <span>50 m</span>
-            <span>500 m</span>
-            <span>1000 m</span>
+            <span>1 km</span>
+            <span>5 km</span>
           </div>
         </div>
 
@@ -125,7 +125,7 @@ export default function CityMap({ city, assessment }) {
                       {selectedPoint[0].toFixed(4)}, {selectedPoint[1].toFixed(4)}
                     </p>
                     <p className="text-xs text-slate-600 mt-1">
-                      Radius: {radius} m
+                      Radius: {radius >= 1000 ? `${(radius / 1000).toFixed(1)} km` : `${radius} m`}
                     </p>
                   </div>
                 </Popup>
@@ -160,7 +160,7 @@ export default function CityMap({ city, assessment }) {
         {selectedPoint && (
           <div className="absolute bottom-4 left-4 z-[1000] bg-white dark:bg-slate-900 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg">
             <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Selected: {radius} m {shape}
+              Selected: {radius >= 1000 ? `${(radius / 1000).toFixed(1)} km` : `${radius} m`} {shape}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Lat: {selectedPoint[0].toFixed(4)}, Lng: {selectedPoint[1].toFixed(4)}
